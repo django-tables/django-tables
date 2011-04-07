@@ -276,9 +276,7 @@ class BoundColumn(StrAndUnicode):
         self.column = column
         self.declared_name = name
         # expose some attributes of the column more directly
-        self.visible = False
-        if column:
-            self.visible = column.visible
+        self.visible = column.visible
 
     @property
     def accessor(self):
