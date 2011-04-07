@@ -212,10 +212,7 @@ class ModelTable(BaseTable):
         queryset = self.queryset
         if self.order_by:
             actual_order_by = self._resolve_sort_directions(self.order_by)
-            print "Order By: %s" % actual_order_by
             queryset = queryset.order_by(
                 *self._col_names_to_src_names(actual_order_by))
-        else:
-            print "No order by"
 
         return queryset
