@@ -14,8 +14,8 @@ def test_basic():
     class StuffTable(tables.MemoryTable):
         name = tables.Column()
         answer = tables.Column(default=42)
-        c = tables.Column(name="count", default=1)
-        email = tables.Column(data="@")
+        count = tables.Column(model_rel="c", default=1)
+        email = tables.Column(model_rel="@")
     stuff = StuffTable([
         {'id': 1, 'name': 'Foo Bar', '@': 'foo@bar.org'},
     ])
@@ -26,8 +26,8 @@ def test_basic():
 
     # make sure BoundColumnn.name always gives us the right thing, whether
     # the column explicitely defines a name or not.
-    stuff.columns['count'].name == 'count'
-    stuff.columns['answer'].name == 'answer'
+    assert stuff.columns['count'].name == 'count'
+    assert stuff.columns['answer'].name == 'answer'
 
     for r in stuff.rows:
         # unknown fields are removed/not-accessible
@@ -42,7 +42,7 @@ def test_basic():
         assert 'count' in r
         assert r['count'] == 1
 
-        # columns with data= option work fine
+        # columns with model_rel= option work fine
         assert r['email'] == 'foo@bar.org'
 
     # try to splice rows by index
@@ -76,7 +76,7 @@ class TestRender:
 
     def test(self):
         class TestTable(tables.MemoryTable):
-            private_name = tables.Column(name='public_name')
+            public_name = tables.Column(model_rel='private_name')
             def render_public_name(self, data):
                 # We are given the actual data dict and have direct access
                 # to additional values for which no field is defined.
@@ -150,9 +150,9 @@ def test_sort():
     class BookTable(tables.MemoryTable):
         id = tables.Column(direction='desc')
         name = tables.Column()
-        pages = tables.Column(name='num_pages')  # test rewritten names
+        num_pages = tables.Column(model_rel='pages')  # test rewritten names
         language = tables.Column(default='en')   # default affects sorting
-        rating = tables.Column(data='*')         # test data field option
+        rating = tables.Column(model_rel='*')         # test data field option
 
     books = BookTable([
         {'id': 1, 'pages':  60, 'name': 'Z: The Book', '*': 5},    # language: en

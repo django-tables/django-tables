@@ -44,12 +44,20 @@ def setup_module(module):
     call_command('syncdb', verbosity=1, interactive=False)
 
     # create a couple of objects
-    berlin=City(name="Berlin"); berlin.save()
-    amsterdam=City(name="Amsterdam"); amsterdam.save()
-    Country(name="Austria", tld="au", population=8, system="republic").save()
-    Country(name="Germany", tld="de", population=81, capital=berlin).save()
-    Country(name="France", tld="fr", population=64, system="republic").save()
-    Country(name="Netherlands", tld="nl", population=16, system="monarchy", capital=amsterdam).save()
+    berlin = City.objects.create(name="Berlin", population=30)
+    amsterdam = City.objects.create(name="Amsterdam", population=6)
+    Country.objects.create(
+        name="Austria", tld="au", population=8, system="republic")
+    Country.objects.create(
+        name="Germany", tld="de", population=81, capital=berlin)
+    Country.objects.create(
+        name="France", tld="fr", population=64, system="republic")
+    Country.objects.create(
+        name="Netherlands",
+        tld="nl",
+        population=16,
+        system="monarchy",
+        capital=amsterdam)
 
 
 class TestDeclaration:
@@ -114,41 +122,44 @@ class TestDeclaration:
 
         assert [c.column.verbose_name for c in CountryTable().columns] == ['Domain Extension']
 
+def _test_country_table(table):
+    for r in table.rows:
+        # "normal" fields exist
+        assert 'name' in r
+        # unknown fields are removed/not accessible
+        assert not 'does-not-exist' in r
+        # ...so are excluded fields
+        assert not 'id' in r
+        # [bug] access to data that might be available, but does not
+        # have a corresponding column is denied.
+        assert_raises(Exception, "r['id']")
+        # missing data is available with default values
+        assert 'null' in r
+        assert r['null'] == "foo"   # note: different from prev. line!
+        # if everything else fails (no default), we get None back
+        assert r['null2'] is None
+
+        # all that still works when name overrides are used
+        assert 'tld' in r
+        assert 'domain' in r
+        assert len(r['domain']) == 2   # valid country tld
 
 def test_basic():
-    """Some tests here are copied from ``test_basic.py`` but need to be
-    rerun with a ModelTable, as the implementation is different."""
+    """
+    Some tests here are copied from ``test_basic.py`` but need to be
+    rerun with a ModelTable, as the implementation is different.
+    """
 
     class CountryTable(tables.ModelTable):
         null = tables.Column(default="foo")
-        tld = tables.Column(name="domain")
+        domain = tables.Column(model_rel="tld")
         class Meta:
             model = Country
             exclude = ('id',)
+
+
     countries = CountryTable()
-
-    def test_country_table(table):
-        for r in table.rows:
-            # "normal" fields exist
-            assert 'name' in r
-            # unknown fields are removed/not accessible
-            assert not 'does-not-exist' in r
-            # ...so are excluded fields
-            assert not 'id' in r
-            # [bug] access to data that might be available, but does not
-            # have a corresponding column is denied.
-            assert_raises(Exception, "r['id']")
-            # missing data is available with default values
-            assert 'null' in r
-            assert r['null'] == "foo"   # note: different from prev. line!
-            # if everything else fails (no default), we get None back
-            assert r['null2'] is None
-
-            # all that still works when name overrides are used
-            assert not 'tld' in r
-            assert 'domain' in r
-            assert len(r['domain']) == 2   # valid country tld
-    test_country_table(countries)
+    _test_country_table(countries)
 
     # repeat the avove tests with a table that is not associated with a
     # model, and all columns being created manually.
@@ -159,10 +170,27 @@ def test_basic():
         system = tables.Column()
         null = tables.Column(default="foo")
         null2 = tables.Column()
-        tld = tables.Column(name="domain")
-    countries = CountryTable(Country)
-    test_country_table(countries)
+        domain = tables.Column(model_rel="tld")
+        tld = tables.Column()
 
+
+    countries = CountryTable(Country)
+    _test_country_table(countries)
+
+def test_with_filter():
+    class CountryTable(tables.ModelTable):
+        null = tables.Column(default="foo")
+        domain = tables.Column(model_rel="tld")
+        class Meta:
+            model = Country
+            exclude = ('id',)
+    countries = CountryTable(Country.objects.filter(name="France"))
+
+    assert len(countries.rows) == 1
+    row = countries.rows[0]
+    assert row['name'] == 'France'
+
+    _test_country_table(countries)
 
 def test_invalid_accessor():
     """Test that a column being backed by a non-existent model property
@@ -171,7 +199,7 @@ def test_invalid_accessor():
     Regression-Test: There used to be a NameError here.
     """
     class CountryTable(tables.ModelTable):
-        name = tables.Column(data='something-i-made-up')
+        name = tables.Column(model_rel='something-i-made-up')
     countries = CountryTable(Country)
     assert_raises(ValueError, countries[0].__getitem__, 'name')
 
@@ -199,7 +227,7 @@ def test_caches():
 
 def test_sort():
     class CountryTable(tables.ModelTable):
-        tld = tables.Column(name="domain")
+        domain = tables.Column(model_rel="tld")
         population = tables.Column()
         system = tables.Column(default="republic")
         custom1 = tables.Column()
@@ -208,9 +236,10 @@ def test_sort():
             model = Country
     countries = CountryTable()
 
-    def test_order(order, result, table=countries):
+    def test_order(order, expected, table=countries):
         table.order_by = order
-        assert [r['id'] for r in table.rows] == result
+        actual = [r['id'] for r in table.rows]
+        assert actual == expected, "actual= %s" % repr(actual)
 
     # test various orderings
     test_order(('population',), [1,4,3,2])
@@ -219,6 +248,8 @@ def test_sort():
     # test sorting with a "rewritten" column name
     countries.order_by = 'domain,tld'      # "tld" would be invalid...
     countries.order_by == ('domain',)      # ...and is therefore removed
+    countries.order_by = ('-domain','tld')      # "tld" would be invalid...
+    countries.order_by == ('-domain',)      # ...and is therefore removed
     test_order(('-domain',), [4,3,2,1])
     # test multiple order instructions; note: one row is missing a "system"
     # value, but has a default set; however, that has no effect on sorting.
@@ -242,7 +273,7 @@ def test_sort():
     # ...in case of ModelTables, this primarily means that only
     # model-based colunns are currently sortable at all.
     countries.order_by = ('custom1', 'custom2')
-    assert countries.order_by == ()
+    assert countries.order_by == (), "Actual: %s" % repr(countries.order_by)
 
 def test_default_sort():
     class SortedCountryTable(tables.ModelTable):
@@ -287,11 +318,17 @@ def test_relationships():
 
     class CountryTable(tables.ModelTable):
         # add relationship spanning columns (using different approaches)
-        capital_name = tables.Column(data='capital__name')
-        capital__population = tables.Column(name="capital_population")
-        invalid = tables.Column(data="capital__invalid")
+        capital_name = tables.Column(model_rel='capital__name')
+        capital_name_link = tables.Column(model_rel='capital__name')
+        cap_pop = tables.Column(model_rel="capital__population")
+        invalid = tables.Column(model_rel="capital__invalid")
         class Meta:
             model = Country
+
+        def render_capital_name_link(self, country):
+            return '<a href="http://en.wikipedia.org/wiki/%s">%s</a>' % (
+                country.capital.name, country.capital.name)
+
     countries = CountryTable(Country.objects.select_related('capital'))
 
     # ordering and field access works
@@ -299,13 +336,14 @@ def test_relationships():
     assert [row['capital_name'] for row in countries.rows] == \
         [None, None, 'Amsterdam', 'Berlin']
 
-    countries.order_by = 'capital_population'
-    assert [row['capital_population'] for row in countries.rows] == \
-        [None, None, None, None]
+    countries.order_by = 'cap_pop'
+    actual = [row['cap_pop'] for row in countries.rows]
+    assert actual == \
+        [None, None, 6, 30], "Actual: %s" % repr(actual)
 
     # ordering by a column with an invalid relationship fails silently
     countries.order_by = 'invalid'
-    assert countries.order_by == ()
+    assert countries.order_by == (), "Actual: %s" % repr(countries.order_by)
 
 
 def test_pagination():
