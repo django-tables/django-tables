@@ -186,7 +186,12 @@ class ModelTable(BaseTable):
                 # Let Django validate the lookup by asking it to build
                 # the final query; the way to do this has changed in
                 # Django 1.2, and we try to support both versions.
-                _temp = self.queryset.order_by(column.src_accessor).query
+
+                # Using the model._default_manager to get a standard manager
+                # in case we're sorting on a "fake" queryset that doesn't
+                # implement the SQL compiler
+                _temp = self.queryset.model._default_manager.order_by(
+                    column.src_accessor).query
                 if hasattr(_temp, 'as_sql'):
                     _temp.as_sql()
                 else:
