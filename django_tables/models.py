@@ -160,7 +160,7 @@ class ModelTable(BaseTable):
             if self._meta.model is None:
                 raise ValueError('Table without a model association needs '
                     'to be initialized with data')
-            self.queryset = self._meta.model._default_manager.all()
+            self.queryset = self._meta.model._default_manager.none()
         elif hasattr(data, '_default_manager'): # saves us db.models import
             self.queryset = data._default_manager.all()
         else:

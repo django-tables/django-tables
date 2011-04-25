@@ -202,6 +202,7 @@ def test_with_empty_list():
 
     # Should be able to pass in an empty list and call order_by on it
     countries = CountryTable([], order_by='domain')
+    assert len(countries.rows) == 0
 
 def test_invalid_accessor():
     """Test that a column being backed by a non-existent model property
@@ -223,7 +224,7 @@ def test_caches():
         class Meta:
             model = Country
             exclude = ('id',)
-    countries = CountryTable()
+    countries = CountryTable(Country.objects.all())
 
     assert id(list(countries.columns)[0]) == id(list(countries.columns)[0])
     # TODO: row cache currently not used
@@ -245,7 +246,7 @@ def test_sort():
         custom2 = tables.Column(sortable=True)
         class Meta:
             model = Country
-    countries = CountryTable()
+    countries = CountryTable(Country.objects.all())
 
     def test_order(order, expected, table=countries):
         table.order_by = order
@@ -274,7 +275,7 @@ def test_sort():
         name = tables.Column(direction='desc')
         class Meta:
             model = City
-    cities = CityTable()
+    cities = CityTable(City.objects.all())
     test_order('name', [1,2], table=cities)   # Berlin to Amsterdam
     test_order('-name', [2,1], table=cities)  # Amsterdam to Berlin
 
@@ -292,16 +293,17 @@ def test_default_sort():
             model = Country
             order_by = '-name'
 
+    countries = Country.objects.all()
     # the order_by option is provided by TableOptions
-    assert_equal('-name', SortedCountryTable()._meta.order_by)
+    assert_equal('-name', SortedCountryTable(countries)._meta.order_by)
 
     # the default order can be inherited from the table
-    assert_equal(('-name',), SortedCountryTable().order_by)
-    assert_equal(4, SortedCountryTable().rows[0]['id'])
+    assert_equal(('-name',), SortedCountryTable(countries).order_by)
+    assert_equal(4, SortedCountryTable(countries).rows[0]['id'])
 
     # and explicitly set (or reset) via __init__
-    assert_equal(2, SortedCountryTable(order_by='system').rows[0]['id'])
-    assert_equal(1, SortedCountryTable(order_by=None).rows[0]['id'])
+    assert_equal(2, SortedCountryTable(countries, order_by='system').rows[0]['id'])
+    assert_equal(1, SortedCountryTable(countries, order_by=None).rows[0]['id'])
 
 def test_callable():
     """Some of the callable code is reimplemented for modeltables, so
@@ -371,12 +373,12 @@ def test_pagination():
         class Meta:
             model = City
             columns = ['name']
-    cities = CityTable()
 
     # add some sample data
     City.objects.all().delete()
     for i in range(1,101):
         City.objects.create(name="City %d"%i)
+    cities = CityTable(City.objects.all())
 
     # for query logging
     settings.DEBUG = True
@@ -389,9 +391,9 @@ def test_pagination():
     assert len(page.object_list) == 10
     assert page.has_previous() == False
     assert page.has_next() == True
-    # Make sure the queryset is not loaded completely - there must be two
-    # queries, one a count(). This check is far from foolproof...
-    assert len(connection.queries)-start_querycount == 2
+    # Make sure the queryset is not loaded completely - there must be one
+    # query: count(). This check is far from foolproof...
+    assert len(connection.queries)-start_querycount == 1, len(connection.queries)-start_querycount
 
     # using a queryset paginator is possible as well (although unnecessary)
     paginator = QuerySetPaginator(cities.rows, 10)
@@ -407,7 +409,7 @@ def test_pagination():
     assert cities.paginator.num_pages == 10
     assert cities.page.has_previous() == False
     assert cities.page.has_next() == True
-    assert len(connection.queries)-start_querycount == 2
+    assert len(connection.queries)-start_querycount == 0
 
     # reset
     settings.DEBUG = False
