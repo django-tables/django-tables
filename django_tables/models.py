@@ -154,7 +154,9 @@ class ModelTable(BaseTable):
     rows_class = ModelRows
 
     def __init__(self, data=None, *args, **kwargs):
-        if data == None:
+        if not data:
+            data = None
+        if data is None:
             if self._meta.model is None:
                 raise ValueError('Table without a model association needs '
                     'to be initialized with data')

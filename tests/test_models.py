@@ -192,6 +192,17 @@ def test_with_filter():
 
     _test_country_table(countries)
 
+def test_with_empty_list():
+    class CountryTable(tables.ModelTable):
+        null = tables.Column(default="foo")
+        domain = tables.Column(model_rel="tld")
+        class Meta:
+            model = Country
+            exclude = ('id',)
+
+    # Should be able to pass in an empty list and call order_by on it
+    countries = CountryTable([], order_by='domain')
+
 def test_invalid_accessor():
     """Test that a column being backed by a non-existent model property
     is handled correctly.
