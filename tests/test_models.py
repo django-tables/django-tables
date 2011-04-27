@@ -221,6 +221,19 @@ def test_with_empty_list():
     countries = CountryTable([], order_by='domain')
     assert len(countries.rows) == 0
 
+def test_with_no_results_query():
+    class CountryTable(tables.ModelTable):
+        null = tables.Column(default="foo")
+        domain = tables.Column(model_rel="tld")
+        class Meta:
+            model = Country
+            exclude = ('id',)
+
+    # Should be able to pass in an empty list and call order_by on it
+    countries = CountryTable(Country.objects.filter(name='does not exist'), order_by='domain')
+    assert len(countries.rows) == 0
+    
+
 def test_invalid_accessor():
     """Test that a column being backed by a non-existent model property
     is handled correctly.
