@@ -7,26 +7,17 @@ class Column(object):
 
     ``verbose_name`` defines a display name for this column used for output.
 
-    ``name`` is the internal name of the column. Normally you don't need to
-    specify this, as the attribute that you make the column available under
-    is used. However, in certain circumstances it can be useful to override
-    this default, e.g. when using ModelTables if you want a column to not
-    use the model field name.
+    ``model_rel`` is the Django ORM-style name of the relationship path from
+    your Model to the field represented by this column. By default, the
+    column"s label is assumed to be the path to the field, but in cases where
+    two different columns are both backed by the same field, you can use
+    the same model_rel on two columns.
 
     ``default`` is the default value for this column. If the data source
     does provide ``None`` for a row, the default will be used instead. Note
     that whether this effects ordering might depend on the table type (model
     or normal). Also, you can specify a callable, which will be passed a
     ``BoundRow`` instance and is expected to return the default to be used.
-
-    Additionally, you may specify ``data``. It works very much like
-    ``default``, except it's effect does not depend on the actual cell
-    value. When given a function, it will always be called with a row object,
-    expected to return the cell value. If given a string, that name will be
-    used to read the data from the source (instead of the column's name).
-
-    Note the interaction with ``default``. If ``default`` is specified as
-    well, it will be used whenver ``data`` yields in a None value.
 
     You can use ``visible`` to flag the column as hidden by default.
     However, this can be overridden by the ``visibility`` argument to the
@@ -46,18 +37,12 @@ class Column(object):
     # Tracks each time a Column instance is created. Used to retain order.
     creation_counter = 0
 
-    def __init__(self, verbose_name=None, name=None, default=None, data=None,
+    def __init__(self, verbose_name=None, model_rel=None, default=None,
                  visible=True, inaccessible=False, sortable=None,
                  direction=ASC):
         self.verbose_name = verbose_name
-        self.name = name
+        self.model_rel = model_rel
         self.default = default
-        self.data = data
-        if callable(self.data):
-            raise DeprecationWarning(('The Column "data" argument may no '+
-                                      'longer be a callable. Add  a '+
-                                      '``render_%s`` method to your '+
-                                      'table instead.') % (name or 'FOO'))
         self.visible = visible
         self.inaccessible = inaccessible
         self.sortable = sortable

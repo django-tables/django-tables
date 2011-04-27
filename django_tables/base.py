@@ -190,12 +190,10 @@ class Columns(object):
         # BoundColumn instances can be costly, so we reuse existing ones.
         new_columns = SortedDict()
         for decl_name, column in self.table.base_columns.items():
-            # take into account name overrides
-            exposed_name = column.name or decl_name
-            if exposed_name in self._columns:
-                new_columns[exposed_name] = self._columns[exposed_name]
+            if decl_name in self._columns:
+                new_columns[decl_name] = self._columns[decl_name]
             else:
-                new_columns[exposed_name] = BoundColumn(self.table, column, decl_name)
+                new_columns[decl_name] = BoundColumn(self.table, column, decl_name)
         self._columns = new_columns
 
     def all(self):
@@ -262,28 +260,28 @@ class Columns(object):
 
 
 class BoundColumn(StrAndUnicode):
-    """'Runtime' version of ``Column`` that is bound to a table instance,
-    and thus knows about the table's data.
-
-    Note that the name that is passed in tells us how this field is
-    delared in the bound table. The column itself can overwrite this name.
-    While the overwritten name will be hat mostly counts, we need to
-    remember the one used for declaration as well, or we won't know how
-    to read a column's value from the source.
     """
-    def __init__(self, table, column, name):
+    'Runtime' version of ``Column`` that is bound to a table instance,
+    and thus knows about the table's data.
+    """
+    def __init__(self, table, column, declared_name):
         self.table = table
         self.column = column
-        self.declared_name = name
+        self.declared_name = declared_name
         # expose some attributes of the column more directly
-        self.visible = column.visible
+        self.visible = False
+        if column:
+            self.visible = column.visible
 
     @property
-    def accessor(self):
-        """The key to use when accessing this column's values in the
+    def src_accessor(self):
+        """
+        The key to use when accessing this column's values in the
         source data.
         """
-        return self.column.data if self.column.data else self.declared_name
+        if self.column.model_rel:
+            return self.column.model_rel
+        return self.declared_name
 
     def _get_sortable(self):
         if self.column.sortable is not None:
@@ -294,7 +292,7 @@ class BoundColumn(StrAndUnicode):
             return True   # the default value
     sortable = property(_get_sortable)
 
-    name = property(lambda s: s.column.name or s.declared_name)
+    name = property(lambda s: s.declared_name)
     name_reversed = property(lambda s: "-"+s.name)
     def _get_name_toggled(self):
         o = self.table.order_by
@@ -320,11 +318,6 @@ class BoundColumn(StrAndUnicode):
             return self.column.default(row)
         return self.column.default
 
-    def _get_values(self):
-        # TODO: build a list of values used
-        pass
-    values = property(_get_values)
-
     def __unicode__(self):
         s = self.column.verbose_name or self.name.replace('_', ' ')
         return capfirst(force_unicode(s))
@@ -334,7 +327,8 @@ class BoundColumn(StrAndUnicode):
 
 
 class BoundRow(object):
-    """Represents a single row of data, bound to a table.
+    """
+    Represents a single row of data, bound to a table.
 
     Tables will spawn these row objects, wrapping around the actual data
     stored in a row.
@@ -348,9 +342,10 @@ class BoundRow(object):
             yield value
 
     def __getitem__(self, name):
-        """Returns this row's value for a column. All other access methods,
-        e.g. __iter__, lead ultimately to this."""
-
+        """
+        Returns this row's value for a column. All other access methods,
+        e.g. __iter__, lead ultimately to this.
+        """
         column = self.table.columns[name]
 
         render_func = getattr(self.table, 'render_%s' % name, False)
@@ -360,10 +355,11 @@ class BoundRow(object):
             return self._default_render(column)
 
     def _default_render(self, column):
-        """Returns a cell's content. This is used unless the user
+        """
+        Returns a cell's content. This is used unless the user
         provides a custom ``render_FOO`` method.
         """
-        result = self.data[column.accessor]
+        result = self.data[column.src_accessor]
 
         # if the field we are pointing to is a callable, remove it
         if callable(result):
@@ -371,7 +367,9 @@ class BoundRow(object):
         return result
 
     def __contains__(self, item):
-        """Check by both row object and column name."""
+        """
+        Check by both row object and column name.
+        """
         if isinstance(item, basestring):
             return item in self.table._columns
         else:
@@ -387,7 +385,8 @@ class BoundRow(object):
 
 
 class Rows(object):
-    """Container for spawning BoundRows.
+    """
+    Container for spawning BoundRows.
 
     This is bound to a table and provides it's ``rows`` property. It
     provides functionality that would not be possible with a simple
@@ -403,12 +402,16 @@ class Rows(object):
         pass   # we currently don't use a cache
 
     def all(self):
-        """Return all rows."""
+        """
+        Return all rows.
+        """
         for row in self.table.data:
             yield self.row_class(self.table, row)
 
     def page(self):
-        """Return rows on current page (if paginated)."""
+        """
+        Return rows on current page (if paginated).
+        """
         if not hasattr(self.table, 'page'):
             return None
         return iter(self.table.page.object_list)
@@ -432,7 +435,8 @@ class Rows(object):
 
 
 class BaseTable(object):
-    """A collection of columns, plus their associated data rows.
+    """
+    A collection of columns, plus their associated data rows.
     """
 
     __metaclass__ = DeclarativeColumnsMetaclass
@@ -445,7 +449,8 @@ class BaseTable(object):
     DefaultOrder = type('DefaultSortType', (), {})()
 
     def __init__(self, data, order_by=DefaultOrder):
-        """Create a new table instance with the iterable ``data``.
+        """
+        Create a new table instance with the iterable ``data``.
 
         If ``order_by`` is specified, the data will be sorted accordingly.
         Otherwise, the sort order can be specified in the table options.
@@ -481,7 +486,8 @@ class BaseTable(object):
         self.base_columns = copy.deepcopy(type(self).base_columns)
 
     def _reset_snapshot(self, reason):
-        """Called to reset the current snaptshot, for example when
+        """
+        Called to reset the current snaptshot, for example when
         options change that could affect it.
 
         ``reason`` is given so that subclasses can decide that a
@@ -490,7 +496,8 @@ class BaseTable(object):
         self._snapshot = None
 
     def _build_snapshot(self):
-        """Rebuild the table for the current set of options.
+        """
+        Rebuild the table for the current set of options.
 
         Whenver the table options change, e.g. say a new sort order,
         this method will be asked to regenerate the actual table from
@@ -507,7 +514,8 @@ class BaseTable(object):
     data = property(lambda s: s._get_data())
 
     def _resolve_sort_directions(self, order_by):
-        """Given an ``order_by`` tuple, this will toggle the hyphen-prefixes
+        """
+        Given an ``order_by`` tuple, this will toggle the hyphen-prefixes
         according to each column's ``direction`` option, e.g. it translates
         between the ascending/descending and the straight/reverse terminology.
         """
@@ -518,22 +526,22 @@ class BaseTable(object):
             result.append(inst)
         return result
 
-    def _cols_to_fields(self, names):
-        """Utility function. Given a list of column names (as exposed to
+    def _col_names_to_src_names(self, names):
+        """
+        Utility function. Given a list of column names (as exposed to
         the user), converts column names to the names we have to use to
         retrieve a column's data from the source.
 
         Usually, the name used in the table declaration is used for accessing
-        the source (while a column can define an alias-like name that will
-        be used to refer to it from the "outside"). However, a column can
-        override this by giving a specific source field name via ``data``.
+        the source. However, a column can override this by giving a specific
+        source field name via ``model_rel``.
 
         Supports prefixed column names as used e.g. in order_by ("-field").
         """
-        result = []
+        src_names = []
         for ident in names:
             # handle order prefix
-            if ident[:1] == '-':
+            if ident.startswith('-'):
                 name = ident[1:]
                 prefix = '-'
             else:
@@ -541,11 +549,12 @@ class BaseTable(object):
                 prefix = ''
             # find the field name
             column = self.columns[name]
-            result.append(prefix + column.accessor)
-        return result
+            src_names.append(prefix + column.src_accessor)
+        return src_names
 
     def _validate_column_name(self, name, purpose):
-        """Return True/False, depending on whether the column ``name`` is
+        """
+        Return True/False, depending on whether the column ``name`` is
         valid for ``purpose``. Used to validate things like ``order_by``
         instructions.
 

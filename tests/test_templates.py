@@ -32,7 +32,8 @@ def test_columns_and_rows():
         population = tables.NumberColumn(verbose_name="Population Size")
         currency = tables.NumberColumn(visible=False, inaccessible=True)
         tld = tables.TextColumn(visible=False, verbose_name="Domain")
-        calling_code = tables.NumberColumn(name="cc", verbose_name="Phone Ext.")
+        cc = tables.NumberColumn(
+            model_rel="calling_code", verbose_name="Phone Ext.")
 
     countries = CountryTable(
         [{'name': 'Germany', 'capital': 'Berlin', 'population': 83, 'currency': 'Euro (€)', 'tld': 'de', 'cc': 49},
@@ -70,7 +71,9 @@ def test_columns_and_rows():
     assert countries.columns['tld'].visible == False
 
 def test_render():
-    """For good measure, render some actual templates."""
+    """
+    For good measure, render some actual templates.
+    """
 
     class CountryTable(tables.MemoryTable):
         name = tables.TextColumn()
@@ -78,7 +81,8 @@ def test_render():
         population = tables.NumberColumn(verbose_name="Population Size")
         currency = tables.NumberColumn(visible=False, inaccessible=True)
         tld = tables.TextColumn(visible=False, verbose_name="Domain")
-        calling_code = tables.NumberColumn(name="cc", verbose_name="Phone Ext.")
+        cc = tables.NumberColumn(
+            model_rel="calling_code", verbose_name="Phone Ext.")
 
     countries = CountryTable(
         [{'name': 'Germany', 'capital': 'Berlin', 'population': 83, 'currency': 'Euro (€)', 'tld': 'de', 'calling_code': 49},
@@ -97,6 +101,37 @@ def test_render():
     print Template("{% for row in countries %}{% if countries.columns.name.visible %}{{ row.name }} {% endif %}{% if countries.columns.tld.visible %}{{ row.tld }} {% endif %}{% endfor %}").\
         render(Context({'countries': countries})) == \
         "Germany France Netherlands Austria"
+
+def test_custom_render():
+    class CountryTable(tables.MemoryTable):
+        name = tables.TextColumn()
+        capital = tables.TextColumn()
+        population = tables.NumberColumn(verbose_name="Population Size")
+        currency = tables.NumberColumn(visible=False, inaccessible=True)
+        tld = tables.TextColumn(visible=False, verbose_name="Domain")
+        cc = tables.NumberColumn(
+            model_rel="calling_code", verbose_name="Phone Ext.")
+
+        def render_cc(self, src_row):
+            return "SUCCESS"
+
+        def render_calling_code(self, src_row):
+            # We should never get here
+            assert False
+
+    countries = CountryTable(
+        [{'name': 'Germany', 'capital': 'Berlin', 'population': 83, 'currency': 'Euro (€)', 'tld': 'de', 'calling_code': 49},
+         {'name': 'France', 'population': 64, 'currency': 'Euro (€)', 'tld': 'fr', 'calling_code': 33},
+         {'name': 'Netherlands', 'capital': 'Amsterdam', 'calling_code': '31'},
+         {'name': 'Austria', 'calling_code': 43, 'currency': 'Euro (€)', 'population': 8}])
+
+    assert Template("{% for column in countries.columns %}{{ column }}/{{ column.name }} {% endfor %}").\
+        render(Context({'countries': countries})) == \
+        "Name/name Capital/capital Population Size/population Phone Ext./cc "
+
+    assert Template("{% for row in countries %}{% for value in row %}{{ value }} {% endfor %}{% endfor %}").\
+        render(Context({'countries': countries})) == \
+        "Germany Berlin 83 SUCCESS France None 64 SUCCESS Netherlands Amsterdam None SUCCESS Austria None 8 SUCCESS "
 
 def test_templatetags():
     add_to_builtins('django_tables.app.templatetags.tables')

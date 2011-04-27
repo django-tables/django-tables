@@ -55,11 +55,12 @@ class BoundModelRow(BoundRow):
     """
 
     def _default_render(self, boundcol):
-        """In the case of a model table, the accessor may use ``__`` to
+        """
+        In the case of a model table, the accessor may use ``__`` to
         span instances. We need to resolve this.
         """
         # try to resolve relationships spanning attributes
-        bits = boundcol.accessor.split('__')
+        bits = boundcol.src_accessor.split('__')
         current = self.data
         for bit in bits:
             # note the difference between the attribute being None and not
@@ -70,7 +71,7 @@ class BoundModelRow(BoundRow):
             # also ``_validate_column_name``, where such a mechanism is
             # already implemented).
             if not hasattr(current, bit):
-                raise ValueError("Could not resolve %s from %s" % (bit, boundcol.accessor))
+                raise ValueError("Could not resolve %s from %s" % (bit, boundcol.src_accessor))
 
             current = getattr(current, bit)
             if callable(current):
@@ -148,17 +149,18 @@ class ModelTable(BaseTable):
     just don't any data at all, the model the table is based on will
     provide it.
     """
-
     __metaclass__ = ModelTableMetaclass
 
     rows_class = ModelRows
 
     def __init__(self, data=None, *args, **kwargs):
-        if data == None:
+        if not data:
+            data = None
+        if data is None:
             if self._meta.model is None:
                 raise ValueError('Table without a model association needs '
                     'to be initialized with data')
-            self.queryset = self._meta.model._default_manager.all()
+            self.queryset = self._meta.model._default_manager.none()
         elif hasattr(data, '_default_manager'): # saves us db.models import
             self.queryset = data._default_manager.all()
         else:
@@ -167,9 +169,10 @@ class ModelTable(BaseTable):
         super(ModelTable, self).__init__(self.queryset, *args, **kwargs)
 
     def _validate_column_name(self, name, purpose):
-        """Overridden. Only allow model-based fields and valid model
-        spanning relationships to be sorted."""
-
+        """
+        Overridden. Only allow model-based fields and valid model
+        spanning relationships to be sorted.
+        """
         # let the base class sort out the easy ones
         result = super(ModelTable, self)._validate_column_name(name, purpose)
         if not result:
@@ -178,51 +181,32 @@ class ModelTable(BaseTable):
         if purpose == 'order_by':
             column = self.columns[name]
 
-            # "data" can really be used in two different ways. It is
-            # slightly confusing and potentially should be changed.
-            # It can either refer to an attribute/field which the table
-            # column should represent, or can be a callable (or a string
-            # pointing to a callable attribute) that is used to render to
-            # cell. The difference is that in the latter case, there may
-            # still be an actual source model field behind the column,
-            # stored in "declared_name". In other words, we want to filter
-            # out column names that are not oderable, and the column name
-            # we need to check may either be stored in "data" or in
-            # "declared_name", depending on if and what kind of value is
-            # in "data". This is the reason why we try twice.
-            #
-            # See also bug #282964.
-            #
             # TODO: It might be faster to try to resolve the given name
             # manually recursing the model metadata rather than
             # constructing a queryset.
-            for lookup in (column.column.data, column.declared_name):
-                if not lookup or callable(lookup):
-                    continue
-                try:
-                    # Let Django validate the lookup by asking it to build
-                    # the final query; the way to do this has changed in
-                    # Django 1.2, and we try to support both versions.
-                    _temp = self.queryset.order_by(lookup).query
-                    if hasattr(_temp, 'as_sql'):
-                        _temp.as_sql()
-                    else:
-                        from django.db import DEFAULT_DB_ALIAS
-                        _temp.get_compiler(DEFAULT_DB_ALIAS).as_sql()
-                    break
-                except FieldError:
-                    pass
-            else:
+            try:
+                # Let Django validate the lookup by asking it to build
+                # the final query; the way to do this has changed in
+                # Django 1.2, and we try to support both versions.
+                _temp = self.queryset.order_by(column.src_accessor).query
+                if hasattr(_temp, 'as_sql'):
+                    _temp.as_sql()
+                else:
+                    from django.db import DEFAULT_DB_ALIAS
+                    _temp.get_compiler(DEFAULT_DB_ALIAS).as_sql()
+            except FieldError:
                 return False
+        else:
+            return False
 
         # if we haven't failed by now, the column should be valid
         return True
 
     def _build_snapshot(self):
-        """Overridden. The snapshot in this case is simply a queryset
+        """
+        Overridden. The snapshot in this case is simply a queryset
         with the necessary filters etc. attached.
         """
-
         # reset caches
         self._columns._reset()
         self._rows._reset()
@@ -230,5 +214,7 @@ class ModelTable(BaseTable):
         queryset = self.queryset
         if self.order_by:
             actual_order_by = self._resolve_sort_directions(self.order_by)
-            queryset = queryset.order_by(*self._cols_to_fields(actual_order_by))
+            queryset = queryset.order_by(
+                *self._col_names_to_src_names(actual_order_by))
+
         return queryset

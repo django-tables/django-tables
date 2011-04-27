@@ -16,39 +16,33 @@ There are no required arguments. The following is fine:
 .. code-block:: python
 
     class MyTable(tables.MemoryTable):
-        c = tables.Column()
+        count = tables.Column()
 
-It will result in a column named ``c`` in the table. You can specify the
-``name`` to override this:
-
-.. code-block:: python
-
-    c = tables.Column(name="count")
-
-The column is now called and accessed via "count", although the table will
-still use ``c`` to read it's values from the source. You can however modify
-that as well, by specifying ``data``:
+It will result in a column named ``count`` in the table that references the
+value ``count`` in your source data (if present). . You can specify the
+``model_rel`` to override the source data this field is referencing :
 
 .. code-block:: python
 
-    c = tables.Column(name="count", data="count")
+    count = tables.Column(model_rel="src_count")
 
-For practicual purposes, ``c`` is now meaningless. While in most cases
-you will just define your column using the name you want it to have, the
-above is useful when working with columns automatically generated from
-models:
+The column is still called and accessed via "count", but now the table will
+ use ``src_count`` to read it's values from the source.
+
+This is useful for occasions where you'd like to place meaningful names mapping
+to input fields with less-useful names.
 
 .. code-block:: python
 
     class BookTable(tables.ModelTable):
-        book_name = tables.Column(name="name")
-        author = tables.Column(data="info__author__name")
+        book_name = tables.Column(model_rel="name")
+        author_name = tables.Column(model_rel="info__author__name")
         class Meta:
             model = Book
 
-The overwritten ``book_name`` field/column will now be exposed as the
-cleaner ``name``, and the new ``author`` column retrieves it's values from
-``Book.info.author.name``.
+The overwritten ``Book.name`` field will now be exposed via the table as
+the ``book_name`` column, and the new ``author_name`` column retrieves it's
+values from ``Book.info.author.name``.
 
 Apart from their internal name, you can define a string that will be used
 when for display via ``verbose_name``:
