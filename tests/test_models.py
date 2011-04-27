@@ -61,7 +61,8 @@ def setup_module(module):
 
 
 class TestDeclaration:
-    """Test declaration, declared columns and default model field columns.
+    """
+    Test declaration, declared columns and default model field columns.
     """
 
     def test_autogen_basic(self):
@@ -93,13 +94,29 @@ class TestDeclaration:
                 columns = ['id', 'name']
                 exclude = ['capital']
 
-        print CityTable.base_columns
         assert len(CityTable.base_columns) == 4
         assert 'id' in CityTable.base_columns
         assert 'name' in CityTable.base_columns
         assert 'projected' in CityTable.base_columns # declared in parent
         assert not 'population' in CityTable.base_columns  # not in Meta:columns
-        assert 'capital' in CityTable.base_columns  # in exclude, but only works on model fields (is that the right behaviour?)
+        # in exclude, but only works on model fields (is that the right behaviour?)
+        assert 'capital' in CityTable.base_columns
+
+        # Define one column so that all automatically-generated columns are
+        # excluded
+        class CountryTable(tables.ModelTable):
+            capital = tables.TextColumn(verbose_name='Name of capital')
+            projected = tables.Column(verbose_name="Projected Population")
+
+            class Meta:
+                model = Country
+                columns = ['capital']
+
+        num_columns = len(CountryTable.base_columns)
+        assert num_columns == 2, "Actual: %s" % num_columns
+        assert 'projected' in CountryTable.base_columns
+        assert 'capital' in CountryTable.base_columns
+        assert not 'tld' in CountryTable.base_columns
 
     def test_columns_custom_order(self):
         """Using the columns meta option, you can also modify the ordering.
