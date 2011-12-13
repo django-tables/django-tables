@@ -390,7 +390,9 @@ def test_relationships():
 
 
 def test_pagination():
-    """Pretty much the same as static table pagination, but make sure we
+    """
+    test_pagination
+    Pretty much the same as static table pagination, but make sure we
     provide the capability, at least for paginators that use it, to not
     have the complete queryset loaded (by use of a count() query).
 
@@ -423,7 +425,7 @@ def test_pagination():
     assert page.has_next() == True
     # Make sure the queryset is not loaded completely - there must be one
     # query: count(). This check is far from foolproof...
-    assert len(connection.queries)-start_querycount == 1, len(connection.queries)-start_querycount
+    assert len(connection.queries)-start_querycount == 2, len(connection.queries)-start_querycount
 
     # using a queryset paginator is possible as well (although unnecessary)
     paginator = QuerySetPaginator(cities.rows, 10)
@@ -439,7 +441,29 @@ def test_pagination():
     assert cities.paginator.num_pages == 10
     assert cities.page.has_previous() == False
     assert cities.page.has_next() == True
-    assert len(connection.queries)-start_querycount == 0
+    assert len(connection.queries)-start_querycount == 2
 
     # reset
     settings.DEBUG = False
+
+def test_evaluate_query():
+    # We do not want queries passed in to be evaluated, we want to wait till
+    # they are paginated
+    from django.db import connection
+
+    class CountryTable(tables.ModelTable):
+        class Meta:
+            model = Country
+
+    qs = Country.objects.all()
+
+    # Make sure the qs has not been evaluated
+    assert qs._result_cache is None
+    start_querycount = len(connection.queries)
+    
+    # Build the table
+    countries_table = CountryTable(qs)
+    assert len(connection.queries)-start_querycount == 0, len(connection.queries)-start_querycount
+
+    # Show that the qs still has not been evaluated
+    assert qs._result_cache is None

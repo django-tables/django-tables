@@ -154,7 +154,7 @@ class ModelTable(BaseTable):
     rows_class = ModelRows
 
     def __init__(self, data=None, *args, **kwargs):
-        if not data:
+        if data == []:
             data = None
         if data is None:
             if self._meta.model is None:
