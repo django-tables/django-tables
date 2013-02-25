@@ -116,7 +116,11 @@ class ModelRows(Rows):
         if getattr(self, '_length', None) is None:
             # This import cannot be at the top otherwise the settings will
             # configure early.
-            self._length = self.table.data.count()
+            from django.db.models.query import QuerySet
+            if isinstance(self.table.data, QuerySet):
+                self._length = self.table.data.count()
+            else:
+                self._length = len(self.table.data)
         return self._length
 
     # for compatibility with QuerySetPaginator

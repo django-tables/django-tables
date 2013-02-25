@@ -506,3 +506,14 @@ def test_evaluate_query():
 
     # Show that the qs still has not been evaluated
     assert qs._result_cache is None
+
+
+def test_with_a_list():
+    class CountryTable(tables.ModelTable):
+        # add relationship spanning columns (using different approaches)
+
+        class Meta:
+            model = Country
+
+    countries = CountryTable(list(Country.objects.all()))
+    assert countries.rows
