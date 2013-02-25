@@ -43,6 +43,7 @@ def setup_module(module):
 
         class Meta:
             app_label = 'testapp'
+            db_table = 'country'
     module.Country = Country
 
     # create the tables
@@ -516,4 +517,7 @@ def test_with_a_list():
             model = Country
 
     countries = CountryTable(list(Country.objects.all()))
+    assert countries.rows
+
+    countries = CountryTable(Country.objects.raw('SELECT * FROM country'))
     assert countries.rows
