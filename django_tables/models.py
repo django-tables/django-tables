@@ -1,7 +1,13 @@
 from django.core.exceptions import FieldError
 from django.utils.datastructures import SortedDict
-from base import BaseTable, DeclarativeColumnsMetaclass, \
-    Column, BoundRow, Rows, TableOptions, rmprefix, toggleprefix
+from base import (
+    BaseTable,
+    DeclarativeColumnsMetaclass,
+    Column,
+    BoundRow,
+    Rows,
+    TableOptions,
+)
 
 
 __all__ = ('ModelTable',)
@@ -33,7 +39,8 @@ def columns_for_model(model, columns=None, exclude=None):
         if (columns and not f.name in columns) or \
            (exclude and f.name in exclude):
             continue
-        column = Column(verbose_name=f.verbose_name) # TODO: chose correct column type, with right options
+        # TODO: chose correct column type, with right options
+        column = Column(verbose_name=f.verbose_name)
         if column:
             field_list.append((f.name, column))
     field_dict = SortedDict(field_list)
@@ -71,7 +78,10 @@ class BoundModelRow(BoundRow):
             # also ``_validate_column_name``, where such a mechanism is
             # already implemented).
             if not hasattr(current, bit):
-                raise ValueError("Could not resolve %s from %s" % (bit, boundcol.src_accessor))
+                raise ValueError("Could not resolve %s from %s" % (
+                    bit,
+                    boundcol.src_accessor,
+                ))
 
             current = getattr(current, bit)
             if callable(current):
@@ -104,6 +114,8 @@ class ModelRows(Rows):
         smart paginators that use len() to perform better.
         """
         if getattr(self, '_length', None) is None:
+            # This import cannot be at the top otherwise the settings will
+            # configure early.
             self._length = self.table.data.count()
         return self._length
 
@@ -161,7 +173,7 @@ class ModelTable(BaseTable):
                 raise ValueError('Table without a model association needs '
                     'to be initialized with data')
             self.queryset = self._meta.model._default_manager.none()
-        elif hasattr(data, '_default_manager'): # saves us db.models import
+        elif hasattr(data, '_default_manager'):  # saves us db.models import
             self.queryset = data._default_manager.all()
         else:
             self.queryset = data

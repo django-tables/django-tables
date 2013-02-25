@@ -5,7 +5,7 @@ Sets up a temporary Django project using a memory SQLite database.
 
 from nose.tools import assert_raises, assert_equal
 from django.conf import settings
-from django.core.paginator import *
+from django.core.paginator import *  # noqa
 import django_tables as tables
 
 
@@ -22,6 +22,7 @@ def setup_module(module):
     class City(models.Model):
         name = models.TextField()
         population = models.IntegerField(null=True)
+
         class Meta:
             app_label = 'testapp'
     module.City = City
@@ -32,10 +33,14 @@ def setup_module(module):
         capital = models.ForeignKey(City, blank=True, null=True)
         tld = models.TextField(verbose_name='Domain Extension', max_length=2)
         system = models.TextField(blank=True, null=True)
-        null = models.TextField(blank=True, null=True)   # tests expect this to be always null!
-        null2 = models.TextField(blank=True, null=True)  #  - " -
+        # tests expect this to be always null!
+        null = models.TextField(blank=True, null=True)
+        #  - " -
+        null2 = models.TextField(blank=True, null=True)
+
         def example_domain(self):
             return 'example.%s' % self.tld
+
         class Meta:
             app_label = 'testapp'
     module.Country = Country
@@ -78,6 +83,7 @@ class TestDeclaration:
         class CountryTable(tables.ModelTable):
             capital = tables.TextColumn(verbose_name='Name of capital')
             projected = tables.Column(verbose_name="Projected Population")
+
             class Meta:
                 model = Country
                 exclude = ['tld']
@@ -97,9 +103,11 @@ class TestDeclaration:
         assert len(CityTable.base_columns) == 4
         assert 'id' in CityTable.base_columns
         assert 'name' in CityTable.base_columns
-        assert 'projected' in CityTable.base_columns # declared in parent
-        assert not 'population' in CityTable.base_columns  # not in Meta:columns
-        # in exclude, but only works on model fields (is that the right behaviour?)
+        assert 'projected' in CityTable.base_columns  # declared in parent
+        # not in Meta:columns
+        assert not 'population' in CityTable.base_columns
+        # in exclude, but only works on model fields (is that the right
+        # behaviour?)
         assert 'capital' in CityTable.base_columns
 
         # Define one column so that all automatically-generated columns are
@@ -123,11 +131,14 @@ class TestDeclaration:
         """
         class CountryTable(tables.ModelTable):
             foo = tables.Column()
+
             class Meta:
                 model = Country
                 columns = ('system', 'population', 'foo', 'tld',)
 
-        assert [c.name for c in CountryTable().columns] == ['system', 'population', 'foo', 'tld']
+        assert [
+            c.name for c in CountryTable().columns
+        ] == ['system', 'population', 'foo', 'tld']
 
     def test_columns_verbose_name(self):
         """Tests that the model field's verbose_name is used for the column
@@ -137,7 +148,10 @@ class TestDeclaration:
                 model = Country
                 columns = ('tld',)
 
-        assert [c.column.verbose_name for c in CountryTable().columns] == ['Domain Extension']
+        assert [
+            c.column.verbose_name for c in CountryTable().columns
+        ] == ['Domain Extension']
+
 
 def _test_country_table(table):
     for r in table.rows:
@@ -161,6 +175,7 @@ def _test_country_table(table):
         assert 'domain' in r
         assert len(r['domain']) == 2   # valid country tld
 
+
 def test_basic():
     """
     Some tests here are copied from ``test_basic.py`` but need to be
@@ -170,10 +185,10 @@ def test_basic():
     class CountryTable(tables.ModelTable):
         null = tables.Column(default="foo")
         domain = tables.Column(model_rel="tld")
+
         class Meta:
             model = Country
             exclude = ('id',)
-
 
     countries = CountryTable()
     _test_country_table(countries)
@@ -190,14 +205,15 @@ def test_basic():
         domain = tables.Column(model_rel="tld")
         tld = tables.Column()
 
-
     countries = CountryTable(Country)
     _test_country_table(countries)
+
 
 def test_with_filter():
     class CountryTable(tables.ModelTable):
         null = tables.Column(default="foo")
         domain = tables.Column(model_rel="tld")
+
         class Meta:
             model = Country
             exclude = ('id',)
@@ -209,10 +225,12 @@ def test_with_filter():
 
     _test_country_table(countries)
 
+
 def test_with_empty_list():
     class CountryTable(tables.ModelTable):
         null = tables.Column(default="foo")
         domain = tables.Column(model_rel="tld")
+
         class Meta:
             model = Country
             exclude = ('id',)
@@ -221,18 +239,23 @@ def test_with_empty_list():
     countries = CountryTable([], order_by='domain')
     assert len(countries.rows) == 0
 
+
 def test_with_no_results_query():
     class CountryTable(tables.ModelTable):
         null = tables.Column(default="foo")
         domain = tables.Column(model_rel="tld")
+
         class Meta:
             model = Country
             exclude = ('id',)
 
     # Should be able to pass in an empty list and call order_by on it
-    countries = CountryTable(Country.objects.filter(name='does not exist'), order_by='domain')
+    countries = CountryTable(
+        Country.objects.filter(name='does not exist'),
+        order_by='domain',
+    )
     assert len(countries.rows) == 0
-    
+
 
 def test_invalid_accessor():
     """Test that a column being backed by a non-existent model property
@@ -267,6 +290,7 @@ def test_caches():
     assert id(list(countries.columns)[0]) != old_column_cache
     assert id(list(countries.rows)[0]) != old_row_cache
 
+
 def test_sort():
     class CountryTable(tables.ModelTable):
         domain = tables.Column(model_rel="tld")
@@ -274,6 +298,7 @@ def test_sort():
         system = tables.Column(default="republic")
         custom1 = tables.Column()
         custom2 = tables.Column(sortable=True)
+
         class Meta:
             model = Country
     countries = CountryTable(Country.objects.all())
@@ -284,30 +309,31 @@ def test_sort():
         assert actual == expected, "actual= %s" % repr(actual)
 
     # test various orderings
-    test_order(('population',), [1,4,3,2])
-    test_order(('-population',), [2,3,4,1])
-    test_order(('name',), [1,3,2,4])
+    test_order(('population',), [1, 4, 3, 2])
+    test_order(('-population',), [2, 3, 4, 1])
+    test_order(('name',), [1, 3, 2, 4])
     # test sorting with a "rewritten" column name
     countries.order_by = 'domain,tld'      # "tld" would be invalid...
     countries.order_by == ('domain',)      # ...and is therefore removed
-    countries.order_by = ('-domain','tld')      # "tld" would be invalid...
+    countries.order_by = ('-domain', 'tld')      # "tld" would be invalid...
     countries.order_by == ('-domain',)      # ...and is therefore removed
-    test_order(('-domain',), [4,3,2,1])
+    test_order(('-domain',), [4, 3, 2, 1])
     # test multiple order instructions; note: one row is missing a "system"
     # value, but has a default set; however, that has no effect on sorting.
-    test_order(('system', '-population'), [2,4,3,1])
+    test_order(('system', '-population'), [2, 4, 3, 1])
     # using a simple string (for convinience as well as querystring passing)
-    test_order('-population', [2,3,4,1])
-    test_order('system,-population', [2,4,3,1])
+    test_order('-population', [2, 3, 4, 1])
+    test_order('system,-population', [2, 4, 3, 1])
 
     # test column with a default ``direction`` set to descending
     class CityTable(tables.ModelTable):
         name = tables.Column(direction='desc')
+
         class Meta:
             model = City
     cities = CityTable(City.objects.all())
-    test_order('name', [1,2], table=cities)   # Berlin to Amsterdam
-    test_order('-name', [2,1], table=cities)  # Amsterdam to Berlin
+    test_order('name', [1, 2], table=cities)   # Berlin to Amsterdam
+    test_order('-name', [2, 1], table=cities)  # Amsterdam to Berlin
 
     # test invalid order instructions...
     countries.order_by = 'invalid_field,population'
@@ -316,6 +342,7 @@ def test_sort():
     # model-based colunns are currently sortable at all.
     countries.order_by = ('custom1', 'custom2')
     assert countries.order_by == (), "Actual: %s" % repr(countries.order_by)
+
 
 def test_default_sort():
     class SortedCountryTable(tables.ModelTable):
@@ -332,8 +359,15 @@ def test_default_sort():
     assert_equal(4, SortedCountryTable(countries).rows[0]['id'])
 
     # and explicitly set (or reset) via __init__
-    assert_equal(2, SortedCountryTable(countries, order_by='system').rows[0]['id'])
+    assert_equal(
+        2,
+        SortedCountryTable(
+            countries,
+            order_by='system',
+        ).rows[0]['id'],
+    )
     assert_equal(1, SortedCountryTable(countries, order_by=None).rows[0]['id'])
+
 
 def test_callable():
     """Some of the callable code is reimplemented for modeltables, so
@@ -343,13 +377,14 @@ def test_callable():
     class CountryTable(tables.ModelTable):
         null = tables.Column(default=lambda s: s['example_domain'])
         example_domain = tables.Column()
+
         class Meta:
             model = Country
     countries = CountryTable(Country)
 
     # model method is called
     assert [row['example_domain'] for row in countries] == \
-                    ['example.'+row['tld'] for row in countries]
+                    ['example.' + row['tld'] for row in countries]
 
     # column default method is called
     assert [row['example_domain'] for row in countries] == \
@@ -365,6 +400,7 @@ def test_relationships():
         capital_name_link = tables.Column(model_rel='capital__name')
         cap_pop = tables.Column(model_rel="capital__population")
         invalid = tables.Column(model_rel="capital__invalid")
+
         class Meta:
             model = Country
 
@@ -408,8 +444,8 @@ def test_pagination():
 
     # add some sample data
     City.objects.all().delete()
-    for i in range(1,101):
-        City.objects.create(name="City %d"%i)
+    for i in range(1, 101):
+        City.objects.create(name="City %d" % i)
     cities = CityTable(City.objects.all())
 
     # for query logging
@@ -425,7 +461,8 @@ def test_pagination():
     assert page.has_next() == True
     # Make sure the queryset is not loaded completely - there must be one
     # query: count(). This check is far from foolproof...
-    assert len(connection.queries)-start_querycount == 2, len(connection.queries)-start_querycount
+    assert len(connection.queries) - start_querycount == 2, \
+        len(connection.queries) - start_querycount
 
     # using a queryset paginator is possible as well (although unnecessary)
     paginator = QuerySetPaginator(cities.rows, 10)
@@ -441,10 +478,11 @@ def test_pagination():
     assert cities.paginator.num_pages == 10
     assert cities.page.has_previous() == False
     assert cities.page.has_next() == True
-    assert len(connection.queries)-start_querycount == 2
+    assert len(connection.queries) - start_querycount == 2
 
     # reset
     settings.DEBUG = False
+
 
 def test_evaluate_query():
     # We do not want queries passed in to be evaluated, we want to wait till
@@ -460,10 +498,11 @@ def test_evaluate_query():
     # Make sure the qs has not been evaluated
     assert qs._result_cache is None
     start_querycount = len(connection.queries)
-    
+
     # Build the table
-    countries_table = CountryTable(qs)
-    assert len(connection.queries)-start_querycount == 0, len(connection.queries)-start_querycount
+    CountryTable(qs)
+    assert len(connection.queries) - start_querycount == 0,\
+            len(connection.queries) - start_querycount
 
     # Show that the qs still has not been evaluated
     assert qs._result_cache is None
