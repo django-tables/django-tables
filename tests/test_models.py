@@ -40,6 +40,7 @@ def setup_module(module):
         system = models.TextField(blank=True, null=True)
         null = models.TextField(blank=True, null=True)   # tests expect this to be always null!
         null2 = models.TextField(blank=True, null=True)  #  - " -
+
         def example_domain(self):
             return 'example.%s' % self.tld
         class Meta:
