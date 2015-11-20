@@ -197,28 +197,6 @@ def test_invalid_accessor():
     assert_raises(ValueError, countries[0].__getitem__, 'name')
 
 
-def test_caches():
-    """Make sure the caches work for model tables as well (parts are
-    reimplemented).
-    """
-    class CountryTable(tables.ModelTable):
-        class Meta:
-            model = Country  # noqa
-            exclude = ('id',)
-    countries = CountryTable()
-
-    assert id(list(countries.columns)[0]) == id(list(countries.columns)[0])
-    # TODO: row cache currently not used
-    # assert id(list(countries.rows)[0]) == id(list(countries.rows)[0])
-
-    # test that caches are reset after an update()
-    old_column_cache = id(list(countries.columns)[0])
-    old_row_cache = id(list(countries.rows)[0])
-    countries.update()
-    assert id(list(countries.columns)[0]) != old_column_cache
-    assert id(list(countries.rows)[0]) != old_row_cache
-
-
 def test_sort():
     class CountryTable(tables.ModelTable):
         tld = tables.Column(name="domain")
