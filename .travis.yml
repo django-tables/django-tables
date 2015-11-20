@@ -6,6 +6,9 @@ env:
   - TOX_ENV=py26-django16
   - TOX_ENV=py27-django14
   - TOX_ENV=py27-django16
+  - TOX_ENV=py27-django17
+  - TOX_ENV=py27-django18
+
 install:
   - pip install tox
 notifications:
