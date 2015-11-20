@@ -49,6 +49,10 @@ def setup_module(module):
             app_label = 'testapp'
     module.Country = Country
 
+    import django
+    if hasattr(django, 'setup'):
+        django.setup()
+
     # create the tables
     call_command('syncdb', verbosity=1, interactive=False)
 

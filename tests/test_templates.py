@@ -7,9 +7,15 @@ via templates or otherwise. Whether a test belongs here or, say, in
 ``test_basic``, is not always a clear-cut decision.
 """
 
-from django.template import Template, Context, add_to_builtins
+from django.template import Template, Context
 from django.http import HttpRequest
 import django_tables as tables
+
+try:
+    from django.template import add_to_builtins
+except ImportError:
+    from django.template.base import add_to_builtins
+
 
 def test_order_by():
     class BookTable(tables.MemoryTable):
