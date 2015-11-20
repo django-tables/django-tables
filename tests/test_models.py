@@ -27,6 +27,7 @@ def setup_module(module):
     class City(models.Model):
         name = models.TextField()
         population = models.IntegerField(null=True)
+
         class Meta:
             app_label = 'testapp'
     module.City = City
