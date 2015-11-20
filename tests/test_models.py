@@ -10,11 +10,16 @@ import django_tables as tables
 
 
 def setup_module(module):
-    settings.configure(**{
-        'DATABASE_ENGINE': 'sqlite3',
-        'DATABASE_NAME': ':memory:',
+    local_settings = {
+        'DATABASES': {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': ':memory:',
+            },
+        },
         'INSTALLED_APPS': ('tests.testapp',)
-    })
+    }
+    settings.configure(**local_settings)
 
     from django.db import models
     from django.core.management import call_command
