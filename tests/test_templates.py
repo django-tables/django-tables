@@ -13,7 +13,7 @@ import django_tables as tables
 
 try:
     from django.template import add_to_builtins
-except ImportError:
+except ImportError:  # This moved in django 1.7
     from django.template.base import add_to_builtins
 
 

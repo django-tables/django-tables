@@ -10,7 +10,7 @@ from options import options
 
 try:
     from django.utils.encoding import StrAndUnicode
-except ImportError:
+except ImportError:  # This was removed in django 1.7
     from django.utils.encoding import python_2_unicode_compatible
 
     @python_2_unicode_compatible
