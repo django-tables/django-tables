@@ -97,28 +97,6 @@ class TestRender:
         assert [r['foo'] for r in table.rows] == [-1, -2]
 
 
-def test_caches():
-    """Ensure the various caches are effective.
-    """
-
-    class BookTable(tables.MemoryTable):
-        name = tables.Column()
-        answer = tables.Column(default=42)
-    books = BookTable([
-        {'name': 'Foo: Bar'},
-    ])
-
-    assert id(list(books.columns)[0]) == id(list(books.columns)[0])
-    # TODO: row cache currently not used
-    #assert id(list(books.rows)[0]) == id(list(books.rows)[0])
-
-    # test that caches are reset after an update()
-    old_column_cache = id(list(books.columns)[0])
-    old_row_cache = id(list(books.rows)[0])
-    books.update()
-    assert id(list(books.columns)[0]) != old_column_cache
-    assert id(list(books.rows)[0]) != old_row_cache
-
 def test_meta_sortable():
     """Specific tests for sortable table meta option."""
 

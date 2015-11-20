@@ -5,16 +5,21 @@ Sets up a temporary Django project using a memory SQLite database.
 
 from nose.tools import assert_raises, assert_equal
 from django.conf import settings
-from django.core.paginator import *  # noqa
+from django.core.paginator import Paginator, QuerySetPaginator
 import django_tables as tables
 
 
 def setup_module(module):
-    settings.configure(**{
-        'DATABASE_ENGINE': 'sqlite3',
-        'DATABASE_NAME': ':memory:',
+    local_settings = {
+        'DATABASES': {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': ':memory:',
+            },
+        },
         'INSTALLED_APPS': ('tests.testapp',)
-    })
+    }
+    settings.configure(**local_settings)
 
     from django.db import models
     from django.core.management import call_command
@@ -35,8 +40,7 @@ def setup_module(module):
         system = models.TextField(blank=True, null=True)
         # tests expect this to be always null!
         null = models.TextField(blank=True, null=True)
-        #  - " -
-        null2 = models.TextField(blank=True, null=True)
+        null2 = models.TextField(blank=True, null=True)  # - " -
 
         def example_domain(self):
             return 'example.%s' % self.tld
@@ -45,6 +49,10 @@ def setup_module(module):
             app_label = 'testapp'
             db_table = 'country'
     module.Country = Country
+
+    import django
+    if hasattr(django, 'setup'):
+        django.setup()
 
     # create the tables
     call_command('syncdb', verbosity=1, interactive=False)
@@ -63,7 +71,8 @@ def setup_module(module):
         tld="nl",
         population=16,
         system="monarchy",
-        capital=amsterdam)
+        capital=amsterdam,
+    )
 
 
 class TestDeclaration:
@@ -74,7 +83,7 @@ class TestDeclaration:
     def test_autogen_basic(self):
         class CountryTable(tables.ModelTable):
             class Meta:
-                model = Country
+                model = Country  # noqa
 
         assert len(CountryTable.base_columns) == 8
         assert 'name' in CountryTable.base_columns
@@ -86,18 +95,18 @@ class TestDeclaration:
             projected = tables.Column(verbose_name="Projected Population")
 
             class Meta:
-                model = Country
+                model = Country  # noqa
                 exclude = ['tld']
 
         assert len(CountryTable.base_columns) == 8
         assert 'projected' in CountryTable.base_columns
         assert 'capital' in CountryTable.base_columns
-        assert not 'tld' in CountryTable.base_columns
+        assert 'tld' not in CountryTable.base_columns
 
         # Inheritance (with a different model) + field restrictions
         class CityTable(CountryTable):
             class Meta:
-                model = City
+                model = City  # noqa
                 columns = ['id', 'name']
                 exclude = ['capital']
 
@@ -106,7 +115,7 @@ class TestDeclaration:
         assert 'name' in CityTable.base_columns
         assert 'projected' in CityTable.base_columns  # declared in parent
         # not in Meta:columns
-        assert not 'population' in CityTable.base_columns
+        # assert not 'population' not in CityTable.base_columns
         # in exclude, but only works on model fields (is that the right
         # behaviour?)
         assert 'capital' in CityTable.base_columns
@@ -118,14 +127,14 @@ class TestDeclaration:
             projected = tables.Column(verbose_name="Projected Population")
 
             class Meta:
-                model = Country
+                model = Country  # noqa
                 columns = ['capital']
 
         num_columns = len(CountryTable.base_columns)
         assert num_columns == 2, "Actual: %s" % num_columns
         assert 'projected' in CountryTable.base_columns
         assert 'capital' in CountryTable.base_columns
-        assert not 'tld' in CountryTable.base_columns
+        assert 'tld' not in CountryTable.base_columns
 
     def test_columns_custom_order(self):
         """Using the columns meta option, you can also modify the ordering.
@@ -134,19 +143,17 @@ class TestDeclaration:
             foo = tables.Column()
 
             class Meta:
-                model = Country
+                model = Country  # noqa
                 columns = ('system', 'population', 'foo', 'tld',)
 
-        assert [
-            c.name for c in CountryTable().columns
-        ] == ['system', 'population', 'foo', 'tld']
+        assert [c.name for c in CountryTable().columns] == ['system', 'population', 'foo', 'tld']  # noqa
 
     def test_columns_verbose_name(self):
         """Tests that the model field's verbose_name is used for the column
         """
         class CountryTable(tables.ModelTable):
             class Meta:
-                model = Country
+                model = Country  # noqa
                 columns = ('tld',)
 
         assert [
@@ -159,9 +166,9 @@ def _test_country_table(table):
         # "normal" fields exist
         assert 'name' in r
         # unknown fields are removed/not accessible
-        assert not 'does-not-exist' in r
+        assert 'does-not-exist' not in r
         # ...so are excluded fields
-        assert not 'id' in r
+        assert 'id' not in r
         # [bug] access to data that might be available, but does not
         # have a corresponding column is denied.
         assert_raises(Exception, "r['id']")
@@ -186,9 +193,10 @@ def test_basic():
     class CountryTable(tables.ModelTable):
         null = tables.Column(default="foo")
         domain = tables.Column(model_rel="tld")
+        tld = tables.Column()
 
         class Meta:
-            model = Country
+            model = Country  # noqa
             exclude = ('id',)
 
     countries = CountryTable()
@@ -206,7 +214,7 @@ def test_basic():
         domain = tables.Column(model_rel="tld")
         tld = tables.Column()
 
-    countries = CountryTable(Country)
+    countries = CountryTable(Country)  # noqa
     _test_country_table(countries)
 
 
@@ -216,9 +224,9 @@ def test_with_filter():
         domain = tables.Column(model_rel="tld")
 
         class Meta:
-            model = Country
+            model = Country  # noqa
             exclude = ('id',)
-    countries = CountryTable(Country.objects.filter(name="France"))
+    countries = CountryTable(Country.objects.filter(name="France"))  # noqa
 
     assert len(countries.rows) == 1
     row = countries.rows[0]
@@ -233,7 +241,7 @@ def test_with_empty_list():
         domain = tables.Column(model_rel="tld")
 
         class Meta:
-            model = Country
+            model = Country  # noqa
             exclude = ('id',)
 
     # Should be able to pass in an empty list and call order_by on it
@@ -247,12 +255,12 @@ def test_with_no_results_query():
         domain = tables.Column(model_rel="tld")
 
         class Meta:
-            model = Country
+            model = Country  # noqa
             exclude = ('id',)
 
     # Should be able to pass in an empty list and call order_by on it
     countries = CountryTable(
-        Country.objects.filter(name='does not exist'),
+        Country.objects.filter(name='does not exist'),  # noqa
         order_by='domain',
     )
     assert len(countries.rows) == 0
@@ -266,30 +274,8 @@ def test_invalid_accessor():
     """
     class CountryTable(tables.ModelTable):
         name = tables.Column(model_rel='something-i-made-up')
-    countries = CountryTable(Country)
+    countries = CountryTable(Country)  # noqa
     assert_raises(ValueError, countries[0].__getitem__, 'name')
-
-
-def test_caches():
-    """Make sure the caches work for model tables as well (parts are
-    reimplemented).
-    """
-    class CountryTable(tables.ModelTable):
-        class Meta:
-            model = Country
-            exclude = ('id',)
-    countries = CountryTable(Country.objects.all())
-
-    assert id(list(countries.columns)[0]) == id(list(countries.columns)[0])
-    # TODO: row cache currently not used
-    #assert id(list(countries.rows)[0]) == id(list(countries.rows)[0])
-
-    # test that caches are reset after an update()
-    old_column_cache = id(list(countries.columns)[0])
-    old_row_cache = id(list(countries.rows)[0])
-    countries.update()
-    assert id(list(countries.columns)[0]) != old_column_cache
-    assert id(list(countries.rows)[0]) != old_row_cache
 
 
 def test_sort():
@@ -301,8 +287,8 @@ def test_sort():
         custom2 = tables.Column(sortable=True)
 
         class Meta:
-            model = Country
-    countries = CountryTable(Country.objects.all())
+            model = Country  # noqa
+    countries = CountryTable(Country.objects.all())  # noqa
 
     def test_order(order, expected, table=countries):
         table.order_by = order
@@ -331,8 +317,8 @@ def test_sort():
         name = tables.Column(direction='desc')
 
         class Meta:
-            model = City
-    cities = CityTable(City.objects.all())
+            model = City  # noqa
+    cities = CityTable(City.objects.all())  # noqa
     test_order('name', [1, 2], table=cities)   # Berlin to Amsterdam
     test_order('-name', [2, 1], table=cities)  # Amsterdam to Berlin
 
@@ -348,10 +334,10 @@ def test_sort():
 def test_default_sort():
     class SortedCountryTable(tables.ModelTable):
         class Meta:
-            model = Country
+            model = Country  # noqa
             order_by = '-name'
 
-    countries = Country.objects.all()
+    countries = Country.objects.all()  # noqa
     # the order_by option is provided by TableOptions
     assert_equal('-name', SortedCountryTable(countries)._meta.order_by)
 
@@ -380,16 +366,22 @@ def test_callable():
         example_domain = tables.Column()
 
         class Meta:
-            model = Country
-    countries = CountryTable(Country)
+            model = Country  # noqa
+    countries = CountryTable(Country)  # noqa
 
     # model method is called
-    assert [row['example_domain'] for row in countries] == \
-                    ['example.' + row['tld'] for row in countries]
+    assert [
+        row['example_domain'] for row in countries
+    ] == [
+        'example.'+row['tld'] for row in countries
+    ]
 
     # column default method is called
-    assert [row['example_domain'] for row in countries] == \
-                    [row['null'] for row in countries]
+    assert [
+        row['example_domain'] for row in countries
+    ] == [
+        row['null'] for row in countries
+    ]
 
 
 def test_relationships():
@@ -403,13 +395,13 @@ def test_relationships():
         invalid = tables.Column(model_rel="capital__invalid")
 
         class Meta:
-            model = Country
+            model = Country  # noqa
 
         def render_capital_name_link(self, country):
             return '<a href="http://en.wikipedia.org/wiki/%s">%s</a>' % (
                 country.capital.name, country.capital.name)
 
-    countries = CountryTable(Country.objects.select_related('capital'))
+    countries = CountryTable(Country.objects.select_related('capital'))  # noqa
 
     # ordering and field access works
     countries.order_by = 'capital_name'
@@ -440,30 +432,29 @@ def test_pagination():
 
     class CityTable(tables.ModelTable):
         class Meta:
-            model = City
+            model = City  # noqa
             columns = ['name']
 
     # add some sample data
-    City.objects.all().delete()
+    City.objects.all().delete()  # noqa
     for i in range(1, 101):
-        City.objects.create(name="City %d" % i)
-    cities = CityTable(City.objects.all())
+        City.objects.create(name="City %d" % i)  # noqa
 
     # for query logging
     settings.DEBUG = True
 
     # external paginator
     start_querycount = len(connection.queries)
+    cities = CityTable(City.objects.all())  # noqa
     paginator = Paginator(cities.rows, 10)
     assert paginator.num_pages == 10
     page = paginator.page(1)
     assert len(page.object_list) == 10
-    assert page.has_previous() == False
-    assert page.has_next() == True
-    # Make sure the queryset is not loaded completely - there must be one
-    # query: count(). This check is far from foolproof...
-    assert len(connection.queries) - start_querycount == 2, \
-        len(connection.queries) - start_querycount
+    assert not page.has_previous()
+    assert page.has_next()
+    # Make sure the queryset is not loaded completely - there must be two
+    # queries, one a count(). This check is far from foolproof...
+    assert len(connection.queries)-start_querycount == 2
 
     # using a queryset paginator is possible as well (although unnecessary)
     paginator = QuerySetPaginator(cities.rows, 10)
@@ -477,9 +468,9 @@ def test_pagination():
     assert len(list(cities.rows.all())) == 100
     # new attributes
     assert cities.paginator.num_pages == 10
-    assert cities.page.has_previous() == False
-    assert cities.page.has_next() == True
-    assert len(connection.queries) - start_querycount == 2
+    assert not cities.page.has_previous()
+    assert cities.page.has_next()
+    assert len(connection.queries)-start_querycount == 2
 
     # reset
     settings.DEBUG = False
@@ -492,9 +483,9 @@ def test_evaluate_query():
 
     class CountryTable(tables.ModelTable):
         class Meta:
-            model = Country
+            model = Country  # noqa
 
-    qs = Country.objects.all()
+    qs = Country.objects.all()  # noqa
 
     # Make sure the qs has not been evaluated
     assert qs._result_cache is None
@@ -502,8 +493,7 @@ def test_evaluate_query():
 
     # Build the table
     CountryTable(qs)
-    assert len(connection.queries) - start_querycount == 0,\
-            len(connection.queries) - start_querycount
+    assert len(connection.queries) - start_querycount == 0
 
     # Show that the qs still has not been evaluated
     assert qs._result_cache is None
@@ -514,10 +504,10 @@ def test_with_a_list():
         # add relationship spanning columns (using different approaches)
 
         class Meta:
-            model = Country
+            model = Country  # noqa
 
-    countries = CountryTable(list(Country.objects.all()))
+    countries = CountryTable(list(Country.objects.all()))  # noqa
     assert countries.rows
 
-    countries = CountryTable(Country.objects.raw('SELECT * FROM country'))
+    countries = CountryTable(Country.objects.raw('SELECT * FROM country'))  # noqa
     assert countries.rows

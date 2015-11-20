@@ -2,10 +2,21 @@ import copy
 from django.http import Http404
 from django.core import paginator
 from django.utils.datastructures import SortedDict
-from django.utils.encoding import force_unicode, StrAndUnicode
+from django.utils.encoding import force_unicode
 from django.utils.text import capfirst
 from columns import Column
 from options import options
+
+
+try:
+    from django.utils.encoding import StrAndUnicode
+except ImportError:  # This was removed in django 1.7
+    from django.utils.encoding import python_2_unicode_compatible
+
+    @python_2_unicode_compatible
+    class StrAndUnicode(object):
+        def __str__(self):
+            return self.code[0]
 
 
 __all__ = ('BaseTable', 'options')
@@ -47,9 +58,11 @@ class DeclarativeColumnsMetaclass(type):
         """
 
         # extract declared columns
-        columns = [(column_name, attrs.pop(column_name))
-           for column_name, obj in attrs.items()
-           if isinstance(obj, Column)]
+        columns = [
+            (column_name, attrs.pop(column_name))
+            for column_name, obj in attrs.items()
+            if isinstance(obj, Column)
+        ]
         columns.sort(lambda x, y: cmp(x[1].creation_counter,
                                       y[1].creation_counter))
 
@@ -69,7 +82,7 @@ class DeclarativeColumnsMetaclass(type):
         # the second time around columns might not be registered again).
         # An example would be:
         #    class MyNewTable(MyOldNonModelTable, tables.ModelTable): pass
-        if not 'base_columns' in attrs:
+        if 'base_columns' not in attrs:
             attrs['base_columns'] = SortedDict()
         attrs['base_columns'].update(SortedDict(columns))
 
@@ -79,11 +92,13 @@ class DeclarativeColumnsMetaclass(type):
 
 def rmprefix(s):
     """Normalize a column name by removing a potential sort prefix"""
-    return (s[:1]=='-' and [s[1:]] or [s])[0]
+    return (s[:1] == '-' and [s[1:]] or [s])[0]
+
 
 def toggleprefix(s):
     """Remove - prefix is existing, or add if missing."""
     return ((s[:1] == '-') and [s[1:]] or ["-"+s])[0]
+
 
 class OrderByTuple(tuple, StrAndUnicode):
         """Stores 'order by' instructions; Used to render output in a format
@@ -111,6 +126,7 @@ class OrderByTuple(tuple, StrAndUnicode):
                 if o == '-'+name:
                     return True
             return False
+
         def is_straight(self, name):
             """The opposite of is_reversed."""
             for o in self:
@@ -128,18 +144,18 @@ class OrderByTuple(tuple, StrAndUnicode):
             it is added.
             """
             prefix = reverse and '-' or ''
-            return OrderByTuple(
-                    [
-                      (
-                        # add either untouched, or reversed
-                        (names and rmprefix(o) not in names)
-                            and [o]
-                            or [prefix+rmprefix(o)]
-                      )[0]
-                    for o in self]
-                    +
-                    [prefix+name for name in names if not name in self]
-            )
+            order_by_tuple = [
+                (
+                    # add either untouched, or reversed
+                    (names and rmprefix(o) not in names)
+                    and [o]
+                    or [prefix+rmprefix(o)]
+                )[0]
+                for o in self
+            ] + [
+                prefix+name for name in names if name not in self
+            ]
+            return OrderByTuple(order_by_tuple)
 
         def toggle(self, names=()):
             """Return a new tuple with the columns from ``names`` toggled
@@ -150,18 +166,18 @@ class OrderByTuple(tuple, StrAndUnicode):
             If names is not specified, all columns are toggled. If a
             column name is given that is currently not part of the order,
             it is added in non-reverse form."""
-            return OrderByTuple(
-                    [
-                      (
-                        # add either untouched, or toggled
-                        (names and rmprefix(o) not in names)
-                            and [o]
-                            or ((o[:1] == '-') and [o[1:]] or ["-"+o])
-                      )[0]
-                    for o in self]
-                    +
-                    [name for name in names if not name in self]
-            )
+            order_by_tuple = [
+                (
+                    # add either untouched, or toggled
+                    (names and rmprefix(o) not in names)
+                    and [o]
+                    or ((o[:1] == '-') and [o[1:]] or ["-"+o])
+                )[0]
+                for o in self
+            ] + [
+                name for name in names if name not in self
+            ]
+            return OrderByTuple(order_by_tuple)
 
 
 class Columns(object):
@@ -193,7 +209,11 @@ class Columns(object):
             if decl_name in self._columns:
                 new_columns[decl_name] = self._columns[decl_name]
             else:
-                new_columns[decl_name] = BoundColumn(self.table, column, decl_name)
+                new_columns[decl_name] = BoundColumn(
+                    self.table,
+                    column,
+                    decl_name,
+                )
         self._columns = new_columns
 
     def all(self):
@@ -294,17 +314,26 @@ class BoundColumn(StrAndUnicode):
 
     name = property(lambda s: s.declared_name)
     name_reversed = property(lambda s: "-"+s.name)
+
     def _get_name_toggled(self):
         o = self.table.order_by
-        if (not self.name in o) or o.is_reversed(self.name): return self.name
-        else: return self.name_reversed
+        if (self.name not in o) or o.is_reversed(self.name):
+            return self.name
+        else:
+            return self.name_reversed
     name_toggled = property(_get_name_toggled)
 
     is_ordered = property(lambda s: s.name in s.table.order_by)
-    is_ordered_reverse = property(lambda s: s.table.order_by.is_reversed(s.name))
-    is_ordered_straight = property(lambda s: s.table.order_by.is_straight(s.name))
+    is_ordered_reverse = property(
+        lambda s: s.table.order_by.is_reversed(s.name)
+    )
+    is_ordered_straight = property(
+        lambda s: s.table.order_by.is_straight(s.name)
+    )
     order_by = property(lambda s: s.table.order_by.polarize(False, [s.name]))
-    order_by_reversed = property(lambda s: s.table.order_by.polarize(True, [s.name]))
+    order_by_reversed = property(
+        lambda s: s.table.order_by.polarize(True, [s.name])
+    )
     order_by_toggled = property(lambda s: s.table.order_by.toggle([s.name]))
 
     def get_default(self, row):
@@ -561,17 +590,14 @@ class BaseTable(object):
         Can be overridden by subclasses to impose further restrictions.
         """
         if purpose == 'order_by':
-            return name in self.columns and\
-                   self.columns[name].sortable
+            return name in self.columns and self.columns[name].sortable
         else:
             return True
 
     def _set_order_by(self, value):
         self._reset_snapshot('order_by')
         # accept both string and tuple instructions
-        order_by = (isinstance(value, basestring) \
-            and [value.split(',')] \
-            or [value])[0]
+        order_by = (isinstance(value, basestring) and [value.split(',')] or [value])[0]  # noqa
         if order_by:
             # validate, remove all invalid order instructions
             validated_order_by = []
