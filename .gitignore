@@ -11,3 +11,4 @@
 /.project
 /.pydevproject
 /*.wpr
+.tox/
