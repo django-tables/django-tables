@@ -1,5 +1,6 @@
+from collections import OrderedDict
+
 from django.core.exceptions import FieldError
-from django.utils.datastructures import SortedDict
 from base import (
     BaseTable,
     DeclarativeColumnsMetaclass,
@@ -43,9 +44,9 @@ def columns_for_model(model, columns=None, exclude=None):
         column = Column(verbose_name=f.verbose_name)
         if column:
             field_list.append((f.name, column))
-    field_dict = SortedDict(field_list)
+    field_dict = OrderedDict(field_list)
     if columns:
-        field_dict = SortedDict(
+        field_dict = OrderedDict(
             [(c, field_dict.get(c)) for c in columns
                 if ((not exclude) or (exclude and c not in exclude))]
         )
