@@ -10,25 +10,6 @@ from django_tables.base import BaseTable
 from django.conf import settings
 
 
-def setup_module(module):
-    try:
-        local_settings = {
-            'DATABASES': {
-                'default': {
-                    'ENGINE': 'django.db.backends.sqlite3',
-                    'NAME': ':memory:',
-                },
-            },
-            'INSTALLED_APPS': ('tests.testapp',)
-        }
-        settings.configure(**local_settings)
-    except Exception:
-        pass
-
-    import django
-    django.setup()
-
-
 class TestTable(BaseTable):
     pass
 
