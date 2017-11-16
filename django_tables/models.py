@@ -37,7 +37,7 @@ def columns_for_model(model, columns=None, exclude=None):
     field_list = []
     opts = model._meta
     for f in opts.fields + opts.many_to_many:
-        if (columns and not f.name in columns) or \
+        if (columns and f.name not in columns) or \
            (exclude and f.name in exclude):
             continue
         # TODO: chose correct column type, with right options
@@ -177,8 +177,9 @@ class ModelTable(BaseTable):
             data = None
         if data is None:
             if self._meta.model is None:
-                raise ValueError('Table without a model association needs '
-                    'to be initialized with data')
+                raise ValueError(
+                    'Table without a model association needs to be initialized with data',  # noqa
+                )
             self.queryset = self._meta.model._default_manager.none()
         elif hasattr(data, '_default_manager'):  # saves us db.models import
             self.queryset = data._default_manager.all()

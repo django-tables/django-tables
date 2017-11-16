@@ -149,9 +149,9 @@ class OrderByTuple(tuple, StrAndUnicode):
             order_by_tuple = [
                 (
                     # add either untouched, or reversed
-                    (names and rmprefix(o) not in names)
-                    and [o]
-                    or [prefix+rmprefix(o)]
+                    (names and rmprefix(o) not in names) and
+                    [o] or
+                    [prefix+rmprefix(o)]
                 )[0]
                 for o in self
             ] + [
@@ -171,9 +171,9 @@ class OrderByTuple(tuple, StrAndUnicode):
             order_by_tuple = [
                 (
                     # add either untouched, or toggled
-                    (names and rmprefix(o) not in names)
-                    and [o]
-                    or ((o[:1] == '-') and [o[1:]] or ["-"+o])
+                    (names and rmprefix(o) not in names) and
+                    [o] or
+                    ((o[:1] == '-') and [o[1:]] or ["-"+o])
                 )[0]
                 for o in self
             ] + [
