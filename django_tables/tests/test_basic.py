@@ -7,7 +7,6 @@ from django.http import Http404
 from django.core.paginator import Paginator
 import django_tables as tables
 from django_tables.base import BaseTable
-from django.conf import settings
 
 
 class TestTable(BaseTable):
