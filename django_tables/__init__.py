@@ -1,4 +1,4 @@
-__version__ = (0, 4, 'dev')
+__version__ = (0, 5, 'dev')
 
 
 from memory import *
