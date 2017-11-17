@@ -1,9 +1,11 @@
 import copy
+from collections import OrderedDict
+
 from django.http import Http404
 from django.core import paginator
-from django.utils.datastructures import SortedDict
 from django.utils.encoding import force_unicode
 from django.utils.text import capfirst
+
 from columns import Column
 from options import options
 
@@ -83,8 +85,8 @@ class DeclarativeColumnsMetaclass(type):
         # An example would be:
         #    class MyNewTable(MyOldNonModelTable, tables.ModelTable): pass
         if 'base_columns' not in attrs:
-            attrs['base_columns'] = SortedDict()
-        attrs['base_columns'].update(SortedDict(columns))
+            attrs['base_columns'] = OrderedDict()
+        attrs['base_columns'].update(OrderedDict(columns))
 
         attrs['_meta'] = TableOptions(attrs.get('Meta', None))
         return type.__new__(cls, name, bases, attrs)
@@ -147,9 +149,9 @@ class OrderByTuple(tuple, StrAndUnicode):
             order_by_tuple = [
                 (
                     # add either untouched, or reversed
-                    (names and rmprefix(o) not in names)
-                    and [o]
-                    or [prefix+rmprefix(o)]
+                    (names and rmprefix(o) not in names) and
+                    [o] or
+                    [prefix+rmprefix(o)]
                 )[0]
                 for o in self
             ] + [
@@ -169,9 +171,9 @@ class OrderByTuple(tuple, StrAndUnicode):
             order_by_tuple = [
                 (
                     # add either untouched, or toggled
-                    (names and rmprefix(o) not in names)
-                    and [o]
-                    or ((o[:1] == '-') and [o[1:]] or ["-"+o])
+                    (names and rmprefix(o) not in names) and
+                    [o] or
+                    ((o[:1] == '-') and [o[1:]] or ["-"+o])
                 )[0]
                 for o in self
             ] + [
@@ -194,17 +196,17 @@ class Columns(object):
     """
     def __init__(self, table):
         self.table = table
-        self._columns = SortedDict()
+        self._columns = OrderedDict()
 
     def _reset(self):
         """Used by parent table class."""
-        self._columns = SortedDict()
+        self._columns = OrderedDict()
 
     def _spawn_columns(self):
         # (re)build the "_columns" cache of BoundColumn objects (note that
         # ``base_columns`` might have changed since last time); creating
         # BoundColumn instances can be costly, so we reuse existing ones.
-        new_columns = SortedDict()
+        new_columns = OrderedDict()
         for decl_name, column in self.table.base_columns.items():
             if decl_name in self._columns:
                 new_columns[decl_name] = self._columns[decl_name]

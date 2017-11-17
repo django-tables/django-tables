@@ -11,11 +11,6 @@ from django.template import Template, Context
 from django.http import HttpRequest
 import django_tables as tables
 
-try:
-    from django.template import add_to_builtins
-except ImportError:  # This moved in django 1.7
-    from django.template.base import add_to_builtins
-
 
 def test_order_by():
     class BookTable(tables.MemoryTable):
@@ -140,12 +135,10 @@ def test_custom_render():
         "Germany Berlin 83 SUCCESS France None 64 SUCCESS Netherlands Amsterdam None SUCCESS Austria None 8 SUCCESS "
 
 def test_templatetags():
-    add_to_builtins('django_tables.app.templatetags.tables')
-
     # [bug] set url param tag handles an order_by tuple with multiple columns
     class MyTable(tables.MemoryTable):
         f1 = tables.Column()
         f2 = tables.Column()
-    t = Template('{% set_url_param x=table.order_by %}')
+    t = Template('{% load tables %}{% set_url_param x=table.order_by %}')
     table = MyTable([], order_by=('f1', 'f2'))
     assert t.render(Context({'request': HttpRequest(), 'table': table})) == '?x=f1%2Cf2'

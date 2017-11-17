@@ -7,56 +7,10 @@ from nose.tools import assert_raises, assert_equal
 from django.conf import settings
 from django.core.paginator import Paginator, QuerySetPaginator
 import django_tables as tables
+from django_tables.tests.testapp.models import City, Country
 
 
 def setup_module(module):
-    local_settings = {
-        'DATABASES': {
-            'default': {
-                'ENGINE': 'django.db.backends.sqlite3',
-                'NAME': ':memory:',
-            },
-        },
-        'INSTALLED_APPS': ('tests.testapp',)
-    }
-    settings.configure(**local_settings)
-
-    from django.db import models
-    from django.core.management import call_command
-
-    class City(models.Model):
-        name = models.TextField()
-        population = models.IntegerField(null=True)
-
-        class Meta:
-            app_label = 'testapp'
-    module.City = City
-
-    class Country(models.Model):
-        name = models.TextField()
-        population = models.IntegerField()
-        capital = models.ForeignKey(City, blank=True, null=True)
-        tld = models.TextField(verbose_name='Domain Extension', max_length=2)
-        system = models.TextField(blank=True, null=True)
-        # tests expect this to be always null!
-        null = models.TextField(blank=True, null=True)
-        null2 = models.TextField(blank=True, null=True)  # - " -
-
-        def example_domain(self):
-            return 'example.%s' % self.tld
-
-        class Meta:
-            app_label = 'testapp'
-            db_table = 'country'
-    module.Country = Country
-
-    import django
-    if hasattr(django, 'setup'):
-        django.setup()
-
-    # create the tables
-    call_command('syncdb', verbosity=1, interactive=False)
-
     # create a couple of objects
     berlin = City.objects.create(name="Berlin", population=30)
     amsterdam = City.objects.create(name="Amsterdam", population=6)
@@ -81,6 +35,7 @@ class TestDeclaration:
     """
 
     def test_autogen_basic(self):
+
         class CountryTable(tables.ModelTable):
             class Meta:
                 model = Country  # noqa
@@ -139,6 +94,7 @@ class TestDeclaration:
     def test_columns_custom_order(self):
         """Using the columns meta option, you can also modify the ordering.
         """
+
         class CountryTable(tables.ModelTable):
             foo = tables.Column()
 
@@ -151,6 +107,7 @@ class TestDeclaration:
     def test_columns_verbose_name(self):
         """Tests that the model field's verbose_name is used for the column
         """
+
         class CountryTable(tables.ModelTable):
             class Meta:
                 model = Country  # noqa
@@ -219,6 +176,7 @@ def test_basic():
 
 
 def test_with_filter():
+
     class CountryTable(tables.ModelTable):
         null = tables.Column(default="foo")
         domain = tables.Column(model_rel="tld")
@@ -236,6 +194,7 @@ def test_with_filter():
 
 
 def test_with_empty_list():
+
     class CountryTable(tables.ModelTable):
         null = tables.Column(default="foo")
         domain = tables.Column(model_rel="tld")
@@ -250,6 +209,7 @@ def test_with_empty_list():
 
 
 def test_with_no_results_query():
+
     class CountryTable(tables.ModelTable):
         null = tables.Column(default="foo")
         domain = tables.Column(model_rel="tld")
@@ -272,6 +232,7 @@ def test_invalid_accessor():
 
     Regression-Test: There used to be a NameError here.
     """
+
     class CountryTable(tables.ModelTable):
         name = tables.Column(model_rel='something-i-made-up')
     countries = CountryTable(Country)  # noqa
@@ -279,6 +240,7 @@ def test_invalid_accessor():
 
 
 def test_sort():
+
     class CountryTable(tables.ModelTable):
         domain = tables.Column(model_rel="tld")
         population = tables.Column()
@@ -332,6 +294,7 @@ def test_sort():
 
 
 def test_default_sort():
+
     class SortedCountryTable(tables.ModelTable):
         class Meta:
             model = Country  # noqa
@@ -500,6 +463,7 @@ def test_evaluate_query():
 
 
 def test_with_a_list():
+
     class CountryTable(tables.ModelTable):
         # add relationship spanning columns (using different approaches)
 

@@ -1,5 +1,6 @@
+from collections import OrderedDict
+
 from django.core.exceptions import FieldError
-from django.utils.datastructures import SortedDict
 from base import (
     BaseTable,
     DeclarativeColumnsMetaclass,
@@ -36,16 +37,16 @@ def columns_for_model(model, columns=None, exclude=None):
     field_list = []
     opts = model._meta
     for f in opts.fields + opts.many_to_many:
-        if (columns and not f.name in columns) or \
+        if (columns and f.name not in columns) or \
            (exclude and f.name in exclude):
             continue
         # TODO: chose correct column type, with right options
         column = Column(verbose_name=f.verbose_name)
         if column:
             field_list.append((f.name, column))
-    field_dict = SortedDict(field_list)
+    field_dict = OrderedDict(field_list)
     if columns:
-        field_dict = SortedDict(
+        field_dict = OrderedDict(
             [(c, field_dict.get(c)) for c in columns
                 if ((not exclude) or (exclude and c not in exclude))]
         )
@@ -176,8 +177,9 @@ class ModelTable(BaseTable):
             data = None
         if data is None:
             if self._meta.model is None:
-                raise ValueError('Table without a model association needs '
-                    'to be initialized with data')
+                raise ValueError(
+                    'Table without a model association needs to be initialized with data',  # noqa
+                )
             self.queryset = self._meta.model._default_manager.none()
         elif hasattr(data, '_default_manager'):  # saves us db.models import
             self.queryset = data._default_manager.all()
