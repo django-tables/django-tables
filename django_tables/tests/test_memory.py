@@ -136,7 +136,7 @@ def test_sort():
         {'id': 1, 'pages':  60, 'name': 'Z: The Book', '*': 5},    # language: en
         {'id': 2, 'pages': 100, 'language': 'de', 'name': 'A: The Book', '*': 2},
         {'id': 3, 'pages':  80, 'language': 'de', 'name': 'A: The Book, Vol. 2', '*': 4},
-        {'id': 4, 'pages': 110, 'language': 'fr', 'name': 'A: The Book, French Edition'},   # rating (with data option) is missing
+        {'id': 4, 'pages': 110, 'language': 'fr', 'name': 'A: The Book, French Edition', '*': 1},   # rating (with data option) is missing
     ])
 
     # None is normalized to an empty order by tuple, ensuring iterability;

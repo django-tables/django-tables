@@ -1,6 +1,10 @@
+import six
+
+
 __all__ = (
     'Column', 'TextColumn', 'NumberColumn',
 )
+
 
 class Column(object):
     """Represents a single column of a table.
@@ -52,9 +56,11 @@ class Column(object):
         Column.creation_counter += 1
 
     def _set_direction(self, value):
-        if isinstance(value, basestring):
+        if isinstance(value, six.string_types):
             if value in ('asc', 'desc'):
-                self._direction = (value == 'asc') and Column.ASC or Column.DESC
+                self._direction = (
+                    (value == 'asc') and Column.ASC or Column.DESC
+                )
             else:
                 raise ValueError('Invalid direction value: %s' % value)
         else:
@@ -65,6 +71,7 @@ class Column(object):
 
 class TextColumn(Column):
     pass
+
 
 class NumberColumn(Column):
     pass

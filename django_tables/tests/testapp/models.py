@@ -12,7 +12,12 @@ class City(models.Model):
 class Country(models.Model):
     name = models.TextField()
     population = models.IntegerField()
-    capital = models.ForeignKey(City, blank=True, null=True)
+    capital = models.ForeignKey(
+        City,
+        blank=True,
+        null=True,
+        on_delete=models.CASCADE,
+    )
     tld = models.TextField(verbose_name='Domain Extension', max_length=2)
     system = models.TextField(blank=True, null=True)
     # tests expect this to be always null!

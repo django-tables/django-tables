@@ -1,7 +1,9 @@
 from collections import OrderedDict
 
+import six
+
 from django.core.exceptions import FieldError
-from base import (
+from .base import (
     BaseTable,
     DeclarativeColumnsMetaclass,
     Column,
@@ -150,7 +152,7 @@ class ModelTableMetaclass(DeclarativeColumnsMetaclass):
         return self
 
 
-class ModelTable(BaseTable):
+class ModelTable(six.with_metaclass(ModelTableMetaclass, BaseTable)):
     """Table that is based on a model.
 
     Similar to ModelForm, a column will automatically be created for all
@@ -168,7 +170,6 @@ class ModelTable(BaseTable):
     just don't any data at all, the model the table is based on will
     provide it.
     """
-    __metaclass__ = ModelTableMetaclass
 
     rows_class = ModelRows
 
@@ -214,11 +215,8 @@ class ModelTable(BaseTable):
                 # implement the SQL compiler
                 _temp = self.queryset.model._default_manager.order_by(
                     column.src_accessor).query
-                if hasattr(_temp, 'as_sql'):
-                    _temp.as_sql()
-                else:
-                    from django.db import DEFAULT_DB_ALIAS
-                    _temp.get_compiler(DEFAULT_DB_ALIAS).as_sql()
+                from django.db import DEFAULT_DB_ALIAS
+                _temp.get_compiler(DEFAULT_DB_ALIAS).as_sql()
             except FieldError:
                 return False
         else:

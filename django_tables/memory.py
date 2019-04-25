@@ -1,5 +1,14 @@
 import copy
-from base import BaseTable, BoundRow
+import functools
+
+from .base import BaseTable, BoundRow
+
+
+try:
+    cmp
+except NameError:
+    def cmp(a, b):
+        return (a > b) - (a < b)
 
 
 __all__ = ('MemoryTable', 'Table',)
@@ -25,7 +34,7 @@ def sort_table(data, order_by):
             instructions.append((o[1:], True,))
         else:
             instructions.append((o, False,))
-    data.sort(cmp=_cmp)
+    data.sort(key=functools.cmp_to_key(_cmp))
 
 
 class MemoryTable(BaseTable):
@@ -75,6 +84,6 @@ class MemoryTable(BaseTable):
 class Table(MemoryTable):
     def __new__(cls, *a, **kw):
         from warnings import warn
-        warn('"Table" has been renamed to "MemoryTable". Please use the '+
+        warn('"Table" has been renamed to "MemoryTable". Please use the ' +
              'new name.', DeprecationWarning)
         return MemoryTable.__new__(cls)

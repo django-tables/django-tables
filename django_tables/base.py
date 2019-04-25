@@ -3,22 +3,14 @@ from collections import OrderedDict
 
 from django.http import Http404
 from django.core import paginator
-from django.utils.encoding import force_unicode
+from django.utils.encoding import force_text
 from django.utils.text import capfirst
+from django.utils.encoding import python_2_unicode_compatible
 
-from columns import Column
-from options import options
+import six
 
-
-try:
-    from django.utils.encoding import StrAndUnicode
-except ImportError:  # This was removed in django 1.7
-    from django.utils.encoding import python_2_unicode_compatible
-
-    @python_2_unicode_compatible
-    class StrAndUnicode(object):
-        def __str__(self):
-            return self.code[0]
+from .columns import Column
+from .options import options
 
 
 __all__ = ('BaseTable', 'options')
@@ -62,11 +54,10 @@ class DeclarativeColumnsMetaclass(type):
         # extract declared columns
         columns = [
             (column_name, attrs.pop(column_name))
-            for column_name, obj in attrs.items()
+            for column_name, obj in list(attrs.items())
             if isinstance(obj, Column)
         ]
-        columns.sort(lambda x, y: cmp(x[1].creation_counter,
-                                      y[1].creation_counter))
+        columns.sort(key=lambda x: x[1].creation_counter)
 
         # If this class is subclassing other tables, add their fields as
         # well. Note that we loop over the bases in *reverse* - this is
@@ -76,7 +67,7 @@ class DeclarativeColumnsMetaclass(type):
                 and parent_cols_from\
                 or 'base_columns'
             if hasattr(base, col_attr):
-                columns = getattr(base, col_attr).items() + columns
+                columns = list(getattr(base, col_attr).items()) + columns
         # Note that we are reusing an existing ``base_columns`` attribute.
         # This is because in certain inheritance cases (mixing normal and
         # ModelTables) this metaclass might be executed twice, and we need
@@ -102,84 +93,85 @@ def toggleprefix(s):
     return ((s[:1] == '-') and [s[1:]] or ["-"+s])[0]
 
 
-class OrderByTuple(tuple, StrAndUnicode):
-        """Stores 'order by' instructions; Used to render output in a format
-        we understand as input (see __unicode__) - especially useful in
-        templates.
+@python_2_unicode_compatible
+class OrderByTuple(tuple):
+    """Stores 'order by' instructions; Used to render output in a format
+    we understand as input (see __str__) - especially useful in
+    templates.
 
-        Also supports some functionality to interact with and modify
-        the order.
+    Also supports some functionality to interact with and modify
+    the order.
+    """
+    def __str__(self):
+        """Output in our input format."""
+        return ",".join(self)
+
+    def __contains__(self, name):
+        """Determine whether a column is part of this order."""
+        for o in self:
+            if rmprefix(o) == name:
+                return True
+        return False
+
+    def is_reversed(self, name):
+        """Returns a bool indicating whether the column is ordered
+        reversed, None if it is missing."""
+        for o in self:
+            if o == '-'+name:
+                return True
+        return False
+
+    def is_straight(self, name):
+        """The opposite of is_reversed."""
+        for o in self:
+            if o == name:
+                return True
+        return False
+
+    def polarize(self, reverse, names=()):
+        """Return a new tuple with the columns from ``names`` set to
+        "reversed" (e.g. prefixed with a '-'). Note that the name is
+        ambiguous - do not confuse this with ``toggle()``.
+
+        If names is not specified, all columns are reversed. If a
+        column name is given that is currently not part of the order,
+        it is added.
         """
-        def __unicode__(self):
-            """Output in our input format."""
-            return ",".join(self)
+        prefix = reverse and '-' or ''
+        order_by_tuple = [
+            (
+                # add either untouched, or reversed
+                (names and rmprefix(o) not in names) and
+                [o] or
+                [prefix+rmprefix(o)]
+            )[0]
+            for o in self
+        ] + [
+            prefix+name for name in names if name not in self
+        ]
+        return OrderByTuple(order_by_tuple)
 
-        def __contains__(self, name):
-            """Determine whether a column is part of this order."""
-            for o in self:
-                if rmprefix(o) == name:
-                    return True
-            return False
+    def toggle(self, names=()):
+        """Return a new tuple with the columns from ``names`` toggled
+        with respect to their "reversed" state. E.g. a '-' prefix will
+        be removed is existing, or added if lacking. Do not confuse
+        with ``reverse()``.
 
-        def is_reversed(self, name):
-            """Returns a bool indicating whether the column is ordered
-            reversed, None if it is missing."""
-            for o in self:
-                if o == '-'+name:
-                    return True
-            return False
-
-        def is_straight(self, name):
-            """The opposite of is_reversed."""
-            for o in self:
-                if o == name:
-                    return True
-            return False
-
-        def polarize(self, reverse, names=()):
-            """Return a new tuple with the columns from ``names`` set to
-            "reversed" (e.g. prefixed with a '-'). Note that the name is
-            ambiguous - do not confuse this with ``toggle()``.
-
-            If names is not specified, all columns are reversed. If a
-            column name is given that is currently not part of the order,
-            it is added.
-            """
-            prefix = reverse and '-' or ''
-            order_by_tuple = [
-                (
-                    # add either untouched, or reversed
-                    (names and rmprefix(o) not in names) and
-                    [o] or
-                    [prefix+rmprefix(o)]
-                )[0]
-                for o in self
-            ] + [
-                prefix+name for name in names if name not in self
-            ]
-            return OrderByTuple(order_by_tuple)
-
-        def toggle(self, names=()):
-            """Return a new tuple with the columns from ``names`` toggled
-            with respect to their "reversed" state. E.g. a '-' prefix will
-            be removed is existing, or added if lacking. Do not confuse
-            with ``reverse()``.
-
-            If names is not specified, all columns are toggled. If a
-            column name is given that is currently not part of the order,
-            it is added in non-reverse form."""
-            order_by_tuple = [
-                (
-                    # add either untouched, or toggled
-                    (names and rmprefix(o) not in names) and
-                    [o] or
-                    ((o[:1] == '-') and [o[1:]] or ["-"+o])
-                )[0]
-                for o in self
-            ] + [
-                name for name in names if name not in self
-            ]
-            return OrderByTuple(order_by_tuple)
+        If names is not specified, all columns are toggled. If a
+        column name is given that is currently not part of the order,
+        it is added in non-reverse form."""
+        order_by_tuple = [
+            (
+                # add either untouched, or toggled
+                (names and rmprefix(o) not in names) and
+                [o] or
+                ((o[:1] == '-') and [o[1:]] or ["-"+o])
+            )[0]
+            for o in self
+        ] + [
+            name for name in names if name not in self
+        ]
+        return OrderByTuple(order_by_tuple)
 
 
 class Columns(object):
@@ -266,7 +258,7 @@ class Columns(object):
     def __contains__(self, item):
         """Check by both column object and column name."""
         self._spawn_columns()
-        if isinstance(item, basestring):
+        if isinstance(item, six.string_types):
             return item in self.names()
         else:
             return item in self.all()
@@ -281,7 +273,8 @@ class Columns(object):
         return self._columns[name]
 
 
-class BoundColumn(StrAndUnicode):
+@python_2_unicode_compatible
+class BoundColumn(object):
     """
     'Runtime' version of ``Column`` that is bound to a table instance,
     and thus knows about the table's data.
@@ -349,9 +342,9 @@ class BoundColumn(StrAndUnicode):
             return self.column.default(row)
         return self.column.default
 
-    def __unicode__(self):
+    def __str__(self):
         s = self.column.verbose_name or self.name.replace('_', ' ')
-        return capfirst(force_unicode(s))
+        return capfirst(force_text(s))
 
     def as_html(self):
         pass
@@ -401,7 +394,7 @@ class BoundRow(object):
         """
         Check by both row object and column name.
         """
-        if isinstance(item, basestring):
+        if isinstance(item, six.string_types):
             return item in self.table._columns
         else:
             return item in self
@@ -465,12 +458,11 @@ class Rows(object):
             raise TypeError('Key must be a slice or integer.')
 
 
-class BaseTable(object):
+@python_2_unicode_compatible
+class BaseTable(six.with_metaclass(DeclarativeColumnsMetaclass)):
     """
     A collection of columns, plus their associated data rows.
     """
-
-    __metaclass__ = DeclarativeColumnsMetaclass
 
     rows_class = Rows
 
@@ -504,12 +496,10 @@ class BaseTable(object):
         # None is a valid order, so we must use DefaultOrder as a flag
         # to fall back to the table sort order. set the attr via the
         # property, to wrap it in an OrderByTuple before being stored
-        if order_by != BaseTable.DefaultOrder:
-            self.order_by = order_by
-
-        else:
+        if isinstance(order_by, type(BaseTable.DefaultOrder)):
             self.order_by = self._meta.order_by
-
+        else:
+            self.order_by = order_by
         # Make a copy so that modifying this will not touch the class
         # definition. Note that this is different from forms, where the
         # copy is made available in a ``fields`` attribute. See the
@@ -599,7 +589,7 @@ class BaseTable(object):
     def _set_order_by(self, value):
         self._reset_snapshot('order_by')
         # accept both string and tuple instructions
-        order_by = (isinstance(value, basestring) and [value.split(',')] or [value])[0]  # noqa
+        order_by = (isinstance(value, six.string_types) and [value.split(',')] or [value])[0]  # noqa
         if order_by:
             # validate, remove all invalid order instructions
             validated_order_by = []
@@ -614,7 +604,7 @@ class BaseTable(object):
 
     order_by = property(lambda s: s._order_by, _set_order_by)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.as_html()
 
     def __iter__(self):
@@ -647,5 +637,5 @@ class BaseTable(object):
         self.paginator = klass(self.rows, *args, **kwargs)
         try:
             self.page = self.paginator.page(page)
-        except paginator.InvalidPage, e:
+        except paginator.InvalidPage as e:
             raise Http404(str(e))
