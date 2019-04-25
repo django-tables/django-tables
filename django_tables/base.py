@@ -467,12 +467,10 @@ class Rows(object):
             raise TypeError('Key must be a slice or integer.')
 
 
-class BaseTable(object):
+class BaseTable(six.with_metaclass(DeclarativeColumnsMetaclass)):
     """
     A collection of columns, plus their associated data rows.
     """
-
-    __metaclass__ = DeclarativeColumnsMetaclass
 
     rows_class = Rows
 
