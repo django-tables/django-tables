@@ -6,6 +6,8 @@ from django.core import paginator
 from django.utils.encoding import force_text
 from django.utils.text import capfirst
 
+import six
+
 from .columns import Column
 from .options import options
 
@@ -266,7 +268,7 @@ class Columns(object):
     def __contains__(self, item):
         """Check by both column object and column name."""
         self._spawn_columns()
-        if isinstance(item, basestring):
+        if isinstance(item, six.string_types):
             return item in self.names()
         else:
             return item in self.all()
@@ -401,7 +403,7 @@ class BoundRow(object):
         """
         Check by both row object and column name.
         """
-        if isinstance(item, basestring):
+        if isinstance(item, six.string_types):
             return item in self.table._columns
         else:
             return item in self
@@ -599,7 +601,7 @@ class BaseTable(object):
     def _set_order_by(self, value):
         self._reset_snapshot('order_by')
         # accept both string and tuple instructions
-        order_by = (isinstance(value, basestring) and [value.split(',')] or [value])[0]  # noqa
+        order_by = (isinstance(value, six.string_types) and [value.split(',')] or [value])[0]  # noqa
         if order_by:
             # validate, remove all invalid order instructions
             validated_order_by = []
