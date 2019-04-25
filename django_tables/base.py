@@ -6,8 +6,8 @@ from django.core import paginator
 from django.utils.encoding import force_unicode
 from django.utils.text import capfirst
 
-from columns import Column
-from options import options
+from .columns import Column
+from .options import options
 
 
 try:

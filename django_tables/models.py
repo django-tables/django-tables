@@ -1,7 +1,7 @@
 from collections import OrderedDict
 
 from django.core.exceptions import FieldError
-from base import (
+from .base import (
     BaseTable,
     DeclarativeColumnsMetaclass,
     Column,
