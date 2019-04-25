@@ -5,22 +5,12 @@ from django.http import Http404
 from django.core import paginator
 from django.utils.encoding import force_text
 from django.utils.text import capfirst
+from django.utils.encoding import python_2_unicode_compatible
 
 import six
 
 from .columns import Column
 from .options import options
-
-
-try:
-    from django.utils.encoding import StrAndUnicode
-except ImportError:  # This was removed in django 1.7
-    from django.utils.encoding import python_2_unicode_compatible
-
-    @python_2_unicode_compatible
-    class StrAndUnicode(object):
-        def __str__(self):
-            return self.code[0]
 
 
 __all__ = ('BaseTable', 'options')
@@ -103,15 +93,16 @@ def toggleprefix(s):
     return ((s[:1] == '-') and [s[1:]] or ["-"+s])[0]
 
 
-class OrderByTuple(tuple, StrAndUnicode):
+@python_2_unicode_compatible
+class OrderByTuple(tuple):
     """Stores 'order by' instructions; Used to render output in a format
-    we understand as input (see __unicode__) - especially useful in
+    we understand as input (see __str__) - especially useful in
     templates.
 
     Also supports some functionality to interact with and modify
     the order.
     """
-    def __unicode__(self):
+    def __str__(self):
         """Output in our input format."""
         return ",".join(self)
 
@@ -282,7 +273,8 @@ class Columns(object):
         return self._columns[name]
 
 
-class BoundColumn(StrAndUnicode):
+@python_2_unicode_compatible
+class BoundColumn(object):
     """
     'Runtime' version of ``Column`` that is bound to a table instance,
     and thus knows about the table's data.
@@ -350,7 +342,7 @@ class BoundColumn(StrAndUnicode):
             return self.column.default(row)
         return self.column.default
 
-    def __unicode__(self):
+    def __str__(self):
         s = self.column.verbose_name or self.name.replace('_', ' ')
         return capfirst(force_text(s))
 
@@ -466,6 +458,7 @@ class Rows(object):
             raise TypeError('Key must be a slice or integer.')
 
 
+@python_2_unicode_compatible
 class BaseTable(six.with_metaclass(DeclarativeColumnsMetaclass)):
     """
     A collection of columns, plus their associated data rows.
@@ -503,12 +496,10 @@ class BaseTable(six.with_metaclass(DeclarativeColumnsMetaclass)):
         # None is a valid order, so we must use DefaultOrder as a flag
         # to fall back to the table sort order. set the attr via the
         # property, to wrap it in an OrderByTuple before being stored
-        if order_by != BaseTable.DefaultOrder:
-            self.order_by = order_by
-
-        else:
+        if isinstance(order_by, type(BaseTable.DefaultOrder)):
             self.order_by = self._meta.order_by
-
+        else:
+            self.order_by = order_by
         # Make a copy so that modifying this will not touch the class
         # definition. Note that this is different from forms, where the
         # copy is made available in a ``fields`` attribute. See the
@@ -613,7 +604,7 @@ class BaseTable(six.with_metaclass(DeclarativeColumnsMetaclass)):
 
     order_by = property(lambda s: s._order_by, _set_order_by)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.as_html()
 
     def __iter__(self):
