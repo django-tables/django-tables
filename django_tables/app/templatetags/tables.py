@@ -14,7 +14,6 @@ Examples:
 
 import urllib
 import tokenize
-import StringIO
 from django import template
 
 import six
@@ -71,7 +70,7 @@ def do_seturlparam(parser, token):
             a = a.strip()
             b = b.strip()
             keys = list(
-                tokenize.generate_tokens(StringIO.StringIO(a).readline),
+                tokenize.generate_tokens(six.StringIO(a).readline),
             )
             if keys[0][0] == tokenize.NAME:
                 if b == '""':
