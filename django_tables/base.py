@@ -67,8 +67,7 @@ class DeclarativeColumnsMetaclass(type):
             for column_name, obj in attrs.items()
             if isinstance(obj, Column)
         ]
-        columns.sort(lambda x, y: cmp(x[1].creation_counter,
-                                      y[1].creation_counter))
+        columns.sort(key=lambda x: x[1].creation_counter)
 
         # If this class is subclassing other tables, add their fields as
         # well. Note that we loop over the bases in *reverse* - this is
@@ -78,7 +77,7 @@ class DeclarativeColumnsMetaclass(type):
                 and parent_cols_from\
                 or 'base_columns'
             if hasattr(base, col_attr):
-                columns = getattr(base, col_attr).items() + columns
+                columns = list(getattr(base, col_attr).items()) + columns
         # Note that we are reusing an existing ``base_columns`` attribute.
         # This is because in certain inheritance cases (mixing normal and
         # ModelTables) this metaclass might be executed twice, and we need
