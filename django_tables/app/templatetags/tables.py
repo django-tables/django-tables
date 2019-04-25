@@ -17,6 +17,8 @@ import tokenize
 import StringIO
 from django import template
 
+import six
+
 register = template.Library()
 
 
@@ -80,7 +82,10 @@ def do_seturlparam(parser, token):
             else:
                 raise ValueError
         except ValueError:
-            raise template.TemplateSyntaxError, "Argument syntax wrong: should be key=value"
+            six.raise_from(
+                template.TemplateSyntaxError,
+                "Argument syntax wrong: should be key=value",
+            )
     return SetUrlParamNode(qschanges)
 
 
