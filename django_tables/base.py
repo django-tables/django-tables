@@ -64,7 +64,7 @@ class DeclarativeColumnsMetaclass(type):
         # extract declared columns
         columns = [
             (column_name, attrs.pop(column_name))
-            for column_name, obj in attrs.items()
+            for column_name, obj in list(attrs.items())
             if isinstance(obj, Column)
         ]
         columns.sort(key=lambda x: x[1].creation_counter)

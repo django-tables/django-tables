@@ -39,7 +39,7 @@ class SetUrlParamNode(template.Node):
             if newvalue == '' or newvalue is None:
                 params.pop(key, False)
             else:
-                params[key] = unicode(newvalue)
+                params[key] = six.text_type(newvalue)
         # ``urlencode`` chokes on unicode input, so convert everything to
         # utf8. Note that if some query arguments passed to the site have
         # their non-ascii characters screwed up when passed though this,
@@ -55,7 +55,7 @@ class SetUrlParamNode(template.Node):
             if isinstance(s, list):
                 return map(mkstr, s)
             else:
-                return (isinstance(s, unicode) and [s.encode('utf-8')] or [s])[0]  # noqa
+                return (isinstance(s, six.text_type) and [s.encode('utf-8')] or [s])[0]  # noqa
         params = dict([(mkstr(k), mkstr(v)) for k, v in params.items()])
         # done, return (string is already safe)
         return '?'+urllib.urlencode(params, doseq=True)
