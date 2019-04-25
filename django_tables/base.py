@@ -647,5 +647,5 @@ class BaseTable(object):
         self.paginator = klass(self.rows, *args, **kwargs)
         try:
             self.page = self.paginator.page(page)
-        except paginator.InvalidPage, e:
+        except paginator.InvalidPage as e:
             raise Http404(str(e))
