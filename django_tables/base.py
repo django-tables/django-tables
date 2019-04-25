@@ -103,83 +103,83 @@ def toggleprefix(s):
 
 
 class OrderByTuple(tuple, StrAndUnicode):
-        """Stores 'order by' instructions; Used to render output in a format
-        we understand as input (see __unicode__) - especially useful in
-        templates.
+    """Stores 'order by' instructions; Used to render output in a format
+    we understand as input (see __unicode__) - especially useful in
+    templates.
 
-        Also supports some functionality to interact with and modify
-        the order.
+    Also supports some functionality to interact with and modify
+    the order.
+    """
+    def __unicode__(self):
+        """Output in our input format."""
+        return ",".join(self)
+
+    def __contains__(self, name):
+        """Determine whether a column is part of this order."""
+        for o in self:
+            if rmprefix(o) == name:
+                return True
+        return False
+
+    def is_reversed(self, name):
+        """Returns a bool indicating whether the column is ordered
+        reversed, None if it is missing."""
+        for o in self:
+            if o == '-'+name:
+                return True
+        return False
+
+    def is_straight(self, name):
+        """The opposite of is_reversed."""
+        for o in self:
+            if o == name:
+                return True
+        return False
+
+    def polarize(self, reverse, names=()):
+        """Return a new tuple with the columns from ``names`` set to
+        "reversed" (e.g. prefixed with a '-'). Note that the name is
+        ambiguous - do not confuse this with ``toggle()``.
+
+        If names is not specified, all columns are reversed. If a
+        column name is given that is currently not part of the order,
+        it is added.
         """
-        def __unicode__(self):
-            """Output in our input format."""
-            return ",".join(self)
+        prefix = reverse and '-' or ''
+        order_by_tuple = [
+            (
+                # add either untouched, or reversed
+                (names and rmprefix(o) not in names) and
+                [o] or
+                [prefix+rmprefix(o)]
+            )[0]
+            for o in self
+        ] + [
+            prefix+name for name in names if name not in self
+        ]
+        return OrderByTuple(order_by_tuple)
 
-        def __contains__(self, name):
-            """Determine whether a column is part of this order."""
-            for o in self:
-                if rmprefix(o) == name:
-                    return True
-            return False
+    def toggle(self, names=()):
+        """Return a new tuple with the columns from ``names`` toggled
+        with respect to their "reversed" state. E.g. a '-' prefix will
+        be removed is existing, or added if lacking. Do not confuse
+        with ``reverse()``.
 
-        def is_reversed(self, name):
-            """Returns a bool indicating whether the column is ordered
-            reversed, None if it is missing."""
-            for o in self:
-                if o == '-'+name:
-                    return True
-            return False
-
-        def is_straight(self, name):
-            """The opposite of is_reversed."""
-            for o in self:
-                if o == name:
-                    return True
-            return False
-
-        def polarize(self, reverse, names=()):
-            """Return a new tuple with the columns from ``names`` set to
-            "reversed" (e.g. prefixed with a '-'). Note that the name is
-            ambiguous - do not confuse this with ``toggle()``.
-
-            If names is not specified, all columns are reversed. If a
-            column name is given that is currently not part of the order,
-            it is added.
-            """
-            prefix = reverse and '-' or ''
-            order_by_tuple = [
-                (
-                    # add either untouched, or reversed
-                    (names and rmprefix(o) not in names) and
-                    [o] or
-                    [prefix+rmprefix(o)]
-                )[0]
-                for o in self
-            ] + [
-                prefix+name for name in names if name not in self
-            ]
-            return OrderByTuple(order_by_tuple)
-
-        def toggle(self, names=()):
-            """Return a new tuple with the columns from ``names`` toggled
-            with respect to their "reversed" state. E.g. a '-' prefix will
-            be removed is existing, or added if lacking. Do not confuse
-            with ``reverse()``.
-
-            If names is not specified, all columns are toggled. If a
-            column name is given that is currently not part of the order,
-            it is added in non-reverse form."""
-            order_by_tuple = [
-                (
-                    # add either untouched, or toggled
-                    (names and rmprefix(o) not in names) and
-                    [o] or
-                    ((o[:1] == '-') and [o[1:]] or ["-"+o])
-                )[0]
-                for o in self
-            ] + [
-                name for name in names if name not in self
-            ]
-            return OrderByTuple(order_by_tuple)
+        If names is not specified, all columns are toggled. If a
+        column name is given that is currently not part of the order,
+        it is added in non-reverse form."""
+        order_by_tuple = [
+            (
+                # add either untouched, or toggled
+                (names and rmprefix(o) not in names) and
+                [o] or
+                ((o[:1] == '-') and [o[1:]] or ["-"+o])
+            )[0]
+            for o in self
+        ] + [
+            name for name in names if name not in self
+        ]
+        return OrderByTuple(order_by_tuple)
 
 
 class Columns(object):

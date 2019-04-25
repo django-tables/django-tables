@@ -76,6 +76,6 @@ class MemoryTable(BaseTable):
 class Table(MemoryTable):
     def __new__(cls, *a, **kw):
         from warnings import warn
-        warn('"Table" has been renamed to "MemoryTable". Please use the '+
+        warn('"Table" has been renamed to "MemoryTable". Please use the ' +
              'new name.', DeprecationWarning)
         return MemoryTable.__new__(cls)
