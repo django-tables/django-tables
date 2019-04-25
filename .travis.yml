@@ -4,8 +4,8 @@ python:
   - "2.7"
 env:
   - TOX_ENV=py27-django111
-  - TOX_ENV=py37-django111
-  - TOX_ENV=py37-django220
+  - TOX_ENV=py371-django111
+  - TOX_ENV=py371-django220
 
 install:
   - pip install tox
