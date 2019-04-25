@@ -12,9 +12,9 @@ Examples:
     {% set_url_param filter="books" page=1 %}
 """
 
-import urllib
 import tokenize
 from django import template
+from django.utils.http import urlencode
 
 import six
 
@@ -58,7 +58,7 @@ class SetUrlParamNode(template.Node):
                 return (isinstance(s, six.text_type) and [s.encode('utf-8')] or [s])[0]  # noqa
         params = dict([(mkstr(k), mkstr(v)) for k, v in params.items()])
         # done, return (string is already safe)
-        return '?'+urllib.urlencode(params, doseq=True)
+        return '?'+urlencode(params, doseq=True)
 
 
 def do_seturlparam(parser, token):

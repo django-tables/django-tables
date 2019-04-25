@@ -7,6 +7,8 @@ via templates or otherwise. Whether a test belongs here or, say, in
 ``test_basic``, is not always a clear-cut decision.
 """
 
+import six
+
 from django.template import Template, Context
 from django.http import HttpRequest
 import django_tables as tables
@@ -76,7 +78,7 @@ def test_columns_and_rows():
     )
     # verbose_name, and fallback to field name
     assert (
-        [unicode(c) for c in countries.columns] ==
+        [six.text_type(c) for c in countries.columns] ==
         ['Name', 'Capital', 'Population Size', 'Phone Ext.']
     )
 
