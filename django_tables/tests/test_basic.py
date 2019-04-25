@@ -35,6 +35,7 @@ def test_declaration():
     # multiple inheritance
     class AddedMixin(TestTable):
         added = tables.Column()
+
     class CityTable(GeoAreaTable, AddedMixin):
         mayer = tables.Column()
 
