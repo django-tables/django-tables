@@ -1,6 +1,14 @@
 import copy
+import functools
 
 from .base import BaseTable, BoundRow
+
+
+try:
+    cmp
+except NameError:
+    def cmp(a, b):
+        return (a > b) - (a < b)
 
 
 __all__ = ('MemoryTable', 'Table',)
@@ -26,7 +34,7 @@ def sort_table(data, order_by):
             instructions.append((o[1:], True,))
         else:
             instructions.append((o, False,))
-    data.sort(cmp=_cmp)
+    data.sort(key=functools.cmp_to_key(_cmp))
 
 
 class MemoryTable(BaseTable):
