@@ -1,5 +1,7 @@
 from collections import OrderedDict
 
+import six
+
 from django.core.exceptions import FieldError
 from .base import (
     BaseTable,
@@ -150,7 +152,7 @@ class ModelTableMetaclass(DeclarativeColumnsMetaclass):
         return self
 
 
-class ModelTable(BaseTable):
+class ModelTable(six.with_metaclass(ModelTableMetaclass, BaseTable)):
     """Table that is based on a model.
 
     Similar to ModelForm, a column will automatically be created for all
@@ -168,7 +170,6 @@ class ModelTable(BaseTable):
     just don't any data at all, the model the table is based on will
     provide it.
     """
-    __metaclass__ = ModelTableMetaclass
 
     rows_class = ModelRows
 
