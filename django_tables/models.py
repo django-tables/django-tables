@@ -215,11 +215,8 @@ class ModelTable(six.with_metaclass(ModelTableMetaclass, BaseTable)):
                 # implement the SQL compiler
                 _temp = self.queryset.model._default_manager.order_by(
                     column.src_accessor).query
-                if hasattr(_temp, 'as_sql'):
-                    _temp.as_sql()
-                else:
-                    from django.db import DEFAULT_DB_ALIAS
-                    _temp.get_compiler(DEFAULT_DB_ALIAS).as_sql()
+                from django.db import DEFAULT_DB_ALIAS
+                _temp.get_compiler(DEFAULT_DB_ALIAS).as_sql()
             except FieldError:
                 return False
         else:
