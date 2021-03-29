@@ -476,19 +476,3 @@ def test_with_a_list():
 
     countries = CountryTable(Country.objects.raw('SELECT * FROM country'))  # noqa
     assert countries.rows
-
-
-def test_lightweight_count_calculation_called():
-    class CountryTable(tables.ModelTable):
-        class Meta:
-            model = Country
-
-    lighthweight_count_query = Mock()
-    lighthweight_count_query.count = Mock(return_value=1)
-    countries = CountryTable(
-        data=None,
-        lightweight_data_count_query=lighthweight_count_query
-    )
-
-    assert len(countries.rows) == 1
-    assert lighthweight_count_query.count.called
