@@ -122,6 +122,8 @@ class ModelRows(Rows):
             data = self.table.data
             if isinstance(data, list):
                 self._length = len(self.table.data)
+            elif self.table.lightweight_data_count_query is not None:
+                self._length = self.table.lightweight_data_count_query.count()
             elif hasattr(data, 'count') and hasattr(data.count, '__call__'):
                 self._length = self.table.data.count()
             else:
@@ -173,7 +175,7 @@ class ModelTable(six.with_metaclass(ModelTableMetaclass, BaseTable)):
 
     rows_class = ModelRows
 
-    def __init__(self, data=None, *args, **kwargs):
+    def __init__(self, data=None, lightweight_data_count_query=None, *args, **kwargs):
         if data == []:
             data = None
         if data is None:
@@ -186,6 +188,7 @@ class ModelTable(six.with_metaclass(ModelTableMetaclass, BaseTable)):
             self.queryset = data._default_manager.all()
         else:
             self.queryset = data
+        self.lightweight_data_count_query = lightweight_data_count_query
 
         super(ModelTable, self).__init__(self.queryset, *args, **kwargs)
 
