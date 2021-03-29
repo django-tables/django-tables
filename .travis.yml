@@ -9,5 +9,5 @@ install:
   - pip install tox
 notifications:
   email:
-    - jason.louard.ward@gmail.com
+    - product-team@policystat.com
 script: tox -e $TOX_ENV
