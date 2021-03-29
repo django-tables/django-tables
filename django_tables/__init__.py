@@ -1,4 +1,4 @@
-__version__ = (0, 6, 'dev')
+__version__ = (0, 7, 'dev')
 
 
 from .memory import *  # noqa
