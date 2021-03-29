@@ -123,7 +123,7 @@ class ModelRows(Rows):
             if isinstance(data, list):
                 self._length = len(self.table.data)
             elif hasattr(data, 'count') and hasattr(data.count, '__call__'):
-                self._length = self.table.data.count()
+                self._length = self.table.data.select_related(None).prefetch_related(None).count()  # noqa E501
             else:
                 self._length = len(list(self.table.data))
         return self._length

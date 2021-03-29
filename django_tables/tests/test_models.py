@@ -2,6 +2,7 @@
 
 Sets up a temporary Django project using a memory SQLite database.
 """
+from unittest.mock import Mock
 
 from nose.tools import assert_raises, assert_equal
 from django.conf import settings

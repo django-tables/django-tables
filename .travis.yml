@@ -3,13 +3,11 @@ dist: xenial
 python:
   - "3.7"
 env:
-  - TOX_ENV=py27-django111
-  - TOX_ENV=py37-django111
-  - TOX_ENV=py37-django220
+  - TOX_ENV=py37-django22
 
 install:
   - pip install tox
 notifications:
   email:
-    - jason.louard.ward@gmail.com
+    - product-team@policystat.com
 script: tox -e $TOX_ENV
