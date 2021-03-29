@@ -1,9 +1,9 @@
 language: python
 dist: xenial
 python:
-  - "3.9"
+  - "3.7"
 env:
-  - TOX_ENV=py39-django220
+  - TOX_ENV=py37-django22
 
 install:
   - pip install tox
