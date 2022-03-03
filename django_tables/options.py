@@ -15,4 +15,6 @@ __all__ = ('options',)
 # raised instead.
 class DefaultOptions(object):
     IGNORE_INVALID_OPTIONS = True
+
+
 options = DefaultOptions()
