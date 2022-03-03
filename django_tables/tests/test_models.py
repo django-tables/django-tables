@@ -2,13 +2,12 @@
 
 Sets up a temporary Django project using a memory SQLite database.
 """
-from unittest.mock import Mock
-
-from nose.tools import assert_raises, assert_equal
 from django.conf import settings
 from django.core.paginator import Paginator
-import django_tables as tables
 from django_tables.tests.testapp.models import City, Country
+from nose.tools import assert_raises, assert_equal
+
+import django_tables as tables
 
 
 def setup_module(module):
