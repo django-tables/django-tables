@@ -18,7 +18,7 @@ You're not necessarily restricted to Django's own paginator (or subclasses) -
 any paginator should work with this approach, so long it only requires
 ``rows`` to implement ``len()``, slicing, and, in the case of a
 ``ModelTable``, a ``count()`` method. The latter means that the
-``QuerySetPaginator`` also works as expected.
+``django.core.paginator.Paginator`` also works as expected.
 
 Alternatively, you may use the ``paginate`` feature:
 
@@ -41,7 +41,7 @@ as it follows the Django protocol:
   attribute, exposing the paginated data.
 
 Note that due to the abstraction layer that ``django-tables`` represents, it
-is not necessary to use Django's ``QuerySetPaginator`` with model tables.
+is not necessary to use Django's ``django.core.paginator.Paginator`` with model tables.
 Since the table knows that it holds a queryset, it will automatically choose
 to use count() to determine the data length (which is exactly what
-``QuerySetPaginator`` would do).
+``django.core.paginator.Paginator`` would do).
