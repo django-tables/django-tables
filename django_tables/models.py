@@ -128,7 +128,7 @@ class ModelRows(Rows):
                 self._length = len(list(self.table.data))
         return self._length
 
-    # for compatibility with QuerySetPaginator
+    # for compatibility with django.core.paginator.Paginator
     count = __len__
 
 

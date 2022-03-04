@@ -5,7 +5,6 @@ from django.http import Http404
 from django.core import paginator
 from django.utils.encoding import force_text
 from django.utils.text import capfirst
-from django.utils.encoding import python_2_unicode_compatible
 
 import six
 
@@ -93,7 +92,6 @@ def toggleprefix(s):
     return ((s[:1] == '-') and [s[1:]] or ["-"+s])[0]
 
 
-@python_2_unicode_compatible
 class OrderByTuple(tuple):
     """Stores 'order by' instructions; Used to render output in a format
     we understand as input (see __str__) - especially useful in
@@ -273,7 +271,6 @@ class Columns(object):
         return self._columns[name]
 
 
-@python_2_unicode_compatible
 class BoundColumn(object):
     """
     'Runtime' version of ``Column`` that is bound to a table instance,
@@ -458,7 +455,6 @@ class Rows(object):
             raise TypeError('Key must be a slice or integer.')
 
 
-@python_2_unicode_compatible
 class BaseTable(six.with_metaclass(DeclarativeColumnsMetaclass)):
     """
     A collection of columns, plus their associated data rows.

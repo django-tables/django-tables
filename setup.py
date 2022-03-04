@@ -8,9 +8,9 @@ from distutils.core import setup
 # which may not be the case when processing a pip requirements
 # file, for example.
 import re
+
 here = os.path.dirname(os.path.abspath(__file__))
-version_re = re.compile(
-    r'__version__ = (\(.*?\))')
+version_re = re.compile(r'__version__ = (\(.*?\))')
 fp = open(os.path.join(here, 'django_tables', '__init__.py'))
 version = None
 for line in fp:
@@ -33,14 +33,14 @@ def find_packages(root):
 
 
 setup(
-    name = 'django-tables',
+    name='django-tables',
     version=".".join(map(str, version)),
-    description = 'Render QuerySets as tabular data in Django.',
-    author = 'Michael Elsdoerfer',
-    author_email = 'michael@elsdoerfer.info',
-    license = 'BSD',
-    url = 'http://launchpad.net/django-tables',
-    classifiers = [
+    description='Render QuerySets as tabular data in Django.',
+    author='Michael Elsdoerfer',
+    author_email='michael@elsdoerfer.info',
+    license='BSD',
+    url='http://launchpad.net/django-tables',
+    classifiers=[
         'Development Status :: 3 - Alpha',
         'Environment :: Web Environment',
         'Framework :: Django',
@@ -50,6 +50,6 @@ setup(
         'Programming Language :: Python',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Software Development :: Libraries',
-        ],
-    packages = find_packages('django_tables'),
+    ],
+    packages=find_packages('django_tables'),
 )

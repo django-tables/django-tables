@@ -44,5 +44,6 @@ def runtests():
     argv = sys.argv[:1] + ['test', 'django_tables', '--traceback'] + sys.argv[1:]  # noqa
     execute_from_command_line(argv)
 
+
 if __name__ == '__main__':
     runtests()

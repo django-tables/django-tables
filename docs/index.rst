@@ -85,7 +85,7 @@ template:
     def list_countries(request):
         data = ...
         countries = CountryTable(data, order_by=request.GET.get('sort', 'name'))
-        return render_to_response('list.html', {'table': countries})
+        return render(request, 'list.html', {'table': countries})
 
 Note that we are giving the incoming ``sort`` query string value directly to
 the table, asking for a sort. All invalid column names will (by default) be
@@ -146,4 +146,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-

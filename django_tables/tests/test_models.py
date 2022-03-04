@@ -2,13 +2,12 @@
 
 Sets up a temporary Django project using a memory SQLite database.
 """
-from unittest.mock import Mock
-
-from nose.tools import assert_raises, assert_equal
 from django.conf import settings
-from django.core.paginator import Paginator, QuerySetPaginator
-import django_tables as tables
+from django.core.paginator import Paginator
 from django_tables.tests.testapp.models import City, Country
+from nose.tools import assert_raises, assert_equal
+
+import django_tables as tables
 
 
 def setup_module(module):
@@ -420,8 +419,7 @@ def test_pagination():
     # queries, one a count(). This check is far from foolproof...
     assert len(connection.queries)-start_querycount == 2
 
-    # using a queryset paginator is possible as well (although unnecessary)
-    paginator = QuerySetPaginator(cities.rows, 10)
+    paginator = Paginator(cities.rows, 10)
     assert paginator.num_pages == 10
 
     # integrated paginator
