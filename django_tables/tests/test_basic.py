@@ -35,6 +35,7 @@ def test_declaration():
     # multiple inheritance
     class AddedMixin(TestTable):
         added = tables.Column()
+
     class CityTable(GeoAreaTable, AddedMixin):
         mayer = tables.Column()
 
@@ -45,6 +46,7 @@ def test_declaration():
     # modeltable hierarchy (both base class orders)
     class StateTable1(tables.ModelTable, GeoAreaTable):
         motto = tables.Column()
+
     class StateTable2(GeoAreaTable, tables.ModelTable):
         motto = tables.Column()
 
@@ -55,20 +57,21 @@ def test_declaration():
 
 def test_sort():
     class MyUnsortedTable(TestTable):
-        alpha  = tables.Column()
-        beta   = tables.Column()
-        n      = tables.Column()
+        alpha  = tables.Column()  # noqa
+        beta   = tables.Column()  # noqa
+        n      = tables.Column()  # noqa
 
     test_data = [
-        {'alpha': "mmm", 'beta': "mmm", 'n': 1 },
-        {'alpha': "aaa", 'beta': "zzz", 'n': 2 },
-        {'alpha': "zzz", 'beta': "aaa", 'n': 3 }]
+        {'alpha': "mmm", 'beta': "mmm", 'n': 1},
+        {'alpha': "aaa", 'beta': "zzz", 'n': 2},
+        {'alpha': "zzz", 'beta': "aaa", 'n': 3},
+    ]
 
     # various different ways to say the same thing: don't sort
-    assert_equal(MyUnsortedTable(test_data               ).order_by, ())
+    assert_equal(MyUnsortedTable(test_data).order_by, ())
     assert_equal(MyUnsortedTable(test_data, order_by=None).order_by, ())
-    assert_equal(MyUnsortedTable(test_data, order_by=[]  ).order_by, ())
-    assert_equal(MyUnsortedTable(test_data, order_by=()  ).order_by, ())
+    assert_equal(MyUnsortedTable(test_data, order_by=[]).order_by, ())
+    assert_equal(MyUnsortedTable(test_data, order_by=()).order_by, ())
 
     # values of order_by are wrapped in tuples before being returned
     assert_equal(('alpha',), MyUnsortedTable([], order_by='alpha').order_by)
@@ -119,8 +122,8 @@ def test_pagination():
 
     # create some sample data
     data = []
-    for i in range(1,101):
-        data.append({'name': 'Book Nr. %d'%i})
+    for i in range(1, 101):
+        data.append({'name': 'Book Nr. %d' % i})
     books = BookTable(data)
 
     # external paginator
@@ -128,8 +131,8 @@ def test_pagination():
     assert paginator.num_pages == 10
     page = paginator.page(1)
     assert len(page.object_list) == 10
-    assert page.has_previous() == False
-    assert page.has_next() == True
+    assert page.has_previous() is False
+    assert page.has_next() is True
 
     # integrated paginator
     books.paginate(Paginator, 10, page=1)
@@ -138,8 +141,8 @@ def test_pagination():
     assert len(list(books.rows.all())) == 100
     # new attributes
     assert books.paginator.num_pages == 10
-    assert books.page.has_previous() == False
-    assert books.page.has_next() == True
+    assert books.page.has_previous() is False
+    assert books.page.has_next() is True
     # exceptions are converted into 404s
     assert_raises(Http404, books.paginate, Paginator, 10, page=9999)
     assert_raises(Http404, books.paginate, Paginator, 10, page="abc")

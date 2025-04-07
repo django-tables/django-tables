@@ -47,23 +47,23 @@ your Python code:
 
     class BookTable(tables.ModelTable):
         name = tables.Column()
-        rating_int = tables.Column(name="rating")
+        rating_int = tables.Column(model_rel="rating_count")
 
-        def render_rating(self, instance):
-            if instance.rating_count == 0:
+        def render_rating(self, book):
+            if book.rating_count == 0:
                 return '<img ="no-rating.png">'
             else:
-                return '<img ="rating-%s.png">' % instance.rating_int
+                return '<img ="rating-%s.png">' % book.rating_count
 
-When accessing ``table.rows[i].rating``, the ``render_rating`` method
+When accessing ``table.rows[i].rating_int``, the ``render_rating_int`` method
 will be called. Note the following:
 
    - What is passed is underlying raw data object, in this case, the
      model instance. This gives you access to data values that may not
      have been defined as a column.
    - For the method name, the public name of the column must be used, not
-     the internal field name. That is, it's ``render_rating``, not
-     ``render_rating_int``.
+     the internal field name. That is, it's ``render_rating_int``, not
+     ``render_rating``.
    - The method is called whenever the cell value is retrieved by you,
      whether from Python code or within templates. However, operations by
      ``django-tables``, like sorting, always work with the raw data.

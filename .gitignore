@@ -1,9 +1,12 @@
+*~
+.DS\_Store
 *.pyc
+__pycache__/
 
-/MANIFEST
+/build
 /dist
 /docs/_build/*
-/build
+/MANIFEST
 
 /BRANCH_TODO
 
@@ -11,4 +14,8 @@
 /.project
 /.pydevproject
 /*.wpr
+
+.python-version
 .tox/
+
+*.egg-info/

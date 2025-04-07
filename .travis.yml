@@ -1,17 +1,25 @@
 language: python
+dist: xenial
 python:
-  - "2.7"
+  - "3.7"
+  - "3.8"
+  - "3.9"
 env:
-  - TOX_ENV=py26-django14
-  - TOX_ENV=py26-django16
-  - TOX_ENV=py27-django14
-  - TOX_ENV=py27-django16
-  - TOX_ENV=py27-django17
-  - TOX_ENV=py27-django18
-
+  - TOX_ENV=py37-django22
+  - TOX_ENV=py38-django22
+  - TOX_ENV=py39-django22
+  - TOX_ENV=py37-django30
+  - TOX_ENV=py38-django30
+  - TOX_ENV=py39-django30
+  - TOX_ENV=py37-django31
+  - TOX_ENV=py38-django31
+  - TOX_ENV=py39-django31
+  - TOX_ENV=py37-django32
+  - TOX_ENV=py38-django32
+  - TOX_ENV=py39-django32
 install:
   - pip install tox
 notifications:
   email:
-    - jason.louard.ward@gmail.com
+    - product-team@policystat.com
 script: tox -e $TOX_ENV

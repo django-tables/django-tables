@@ -23,10 +23,15 @@ The API looks similar to that of Django's ``ModelForms``:
 
     import django_tables as tables
 
+    MY_TIMEZONE = -5
     class CountryTable(tables.MemoryTable):
         name = tables.Column(verbose_name="Country Name")
         population = tables.Column(sortable=False, visible=False)
-        time_zone = tables.Column(name="tz", default="UTC+1")
+        time_zone = tables.Column(model_rel="tz", default="+1")
+        time_diff = tables.Column(model_rel="tz")
+
+        def render_time_diff(self, country):
+            return int(country.tz) - MY_TIMEZONE
 
 Instead of fields, you declare a column for every piece of data you want
 to expose to the user.
@@ -79,15 +84,14 @@ template:
 
     def list_countries(request):
         data = ...
-        countries = CountryTable(data, order_by=request.GET.get('sort'))
-        return render_to_response('list.html', {'table': countries})
+        countries = CountryTable(data, order_by=request.GET.get('sort', 'name'))
+        return render(request, 'list.html', {'table': countries})
 
 Note that we are giving the incoming ``sort`` query string value directly to
 the table, asking for a sort. All invalid column names will (by default) be
-ignored. In this example, only ``name`` and ``tz`` are allowed, since:
+ignored. In this example, only ``name`` and ``time_zone`` are allowed, since:
 
  * ``population`` has ``sortable=False``
- * ``time_zone`` has it's name overwritten with ``tz``.
 
 Then, in the ``list.html`` template, write:
 
@@ -114,13 +118,13 @@ which in turn will be used by the server for ordering. ``order_by`` accepts
 comma-separated strings as input, and ``{{ column.name_toggled }}`` will be
 rendered as a such a string.
 
-Instead of the iterator, you can alos use your knowledge of the table
+Instead of the iterator, you can also use your knowledge of the table
 structure to access columns directly:
 
 .. code-block:: django
 
-    {% if table.columns.tz.visible %}
-        {{ table.columns.tz }}
+    {% if table.columns.time_zone.visible %}
+        {{ table.columns.time_zone }}
     {% endfor %}
 
 
@@ -142,4 +146,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-
